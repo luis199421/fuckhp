@@ -45,6 +45,8 @@ About 0.85 kg of PETG and 40 g of TPU in total, roughly 35 hours of printing.
 
 * `cad/assembly.scad` shows the whole machine (`-D CARR_X=200` moves the
   carriage). Renders are in `docs/img`.
+* `cad/animation.scad` + `tools/render_animation.py` render the step-by-step
+  assembly animation (`docs/img/assembly_animation.gif` / `.mp4`).
 * Each part renders as a single solid (no floating pieces).
 * The carriage's full travel was checked against the plates, platen, rollers,
   star wheels, sensor and return belt with `cad/check_collisions.scad`

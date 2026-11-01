@@ -6,7 +6,10 @@ Pico 2 for brains, and its own driver over USB. Inspired by
 [Openprinter](https://www.crowdsupply.com/open-tools/openprinter) (Open Tools),
 which is still "launching soon"; FreeJet is buildable today and GPL-licensed.
 
-![FreeJet FJ-1 assembly, rear view](docs/img/assembly_rear.png)
+![FreeJet FJ-1 assembly animation](docs/img/assembly_animation.gif)
+
+*Assembly in 15 steps, then a print ([MP4](docs/img/assembly_animation.mp4)). Rendered from the
+real CAD files with `python3 tools/render_animation.py`.*
 
 | | |
 |---|---|

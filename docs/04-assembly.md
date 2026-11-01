@@ -1,5 +1,7 @@
 # 4. Assembly
 
+![assembly animation](img/assembly_animation.gif)
+
 Coordinates used below: **X** = left–right (carriage travel), **Y** =
 paper travel (rear → front), **Z** = up. "Inner face" = the side of a plate
 that faces the other plate. Tools: 2.5/1.5 mm hex keys, small pliers, a
