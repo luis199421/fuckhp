@@ -1,7 +1,7 @@
 #!/bin/sh
-# Turn a Raspberry Pi (Zero 2 W or any Pi on Raspberry Pi OS / Debian) into a Wi-Fi print
-# server for a FreeJet connected to it by USB. Afterwards phones (AirPrint / Android default
-# print service), Windows, macOS and Linux find the printer on the network with no driver.
+# Share a USB-connected FreeJet on the network from the Linux computer it's plugged into
+# (Debian/Ubuntu/Raspberry Pi OS). Afterwards phones (AirPrint / Android default print
+# service), Windows, macOS and Linux find the printer on the network with no driver.
 #
 #   sudo ./setup-print-server.sh
 set -e
@@ -13,14 +13,13 @@ apt-get update -q
 apt-get install -y -q cups cups-filters ghostscript avahi-daemon python3-venv
 
 echo "-> FreeJet driver + queue"
-"$HERE/install.sh" --add
+lpstat -p FreeJet >/dev/null 2>&1 || "$HERE/install.sh" --add
 
 echo "-> share the queue on the network"
 lpadmin -p FreeJet -o printer-is-shared=true
 cupsctl --share-printers --remote-any
-# let the default user manage printers from the web UI (http://<pi>:631)
-SUDO_USER_NAME=${SUDO_USER:-pi}
-usermod -aG lpadmin "$SUDO_USER_NAME" 2>/dev/null || true
+# let the user who ran sudo manage printers from the web UI (http://<host>:631)
+[ -n "$SUDO_USER" ] && usermod -aG lpadmin "$SUDO_USER" 2>/dev/null || true
 systemctl enable --now avahi-daemon cups
 systemctl restart cups
 

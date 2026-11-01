@@ -18,8 +18,8 @@ ideas and makes them buildable today at home, under the GPL.
 | Frame | standard mechanical components, desk or wall mount | **3D-printed** plates/parts on eight 8 mm rods |
 | Electronics | Raspberry Pi Zero W main board + STM32 cartridge board | Raspberry Pi Pico 2 + 2× TMC2209 + printhead board |
 | User interface | 1.47" TFT + jog wheel | one button + LED (status in the computer's print dialog) |
-| Connection | USB-C, USB-A (print from a stick), Wi-Fi, Bluetooth | **USB** (no kernel driver needed); Wi-Fi/AirPrint with the optional [Pi print server](11-print-server.md) |
-| Driver | CUPS running on the printer's Pi | CUPS filter + backend, `freejet` CLI; same CUPS queue can run on a Pi Zero 2 W |
+| Connection | USB-C, USB-A (print from a stick), Wi-Fi, Bluetooth | **USB** (no kernel driver needed); network sharing through the host computer ([how](11-print-server.md)) |
+| Driver | CUPS running on the printer's Pi | CUPS filter + backend and `freejet` CLI on your computer: the printer itself only needs a $5 Pico 2 |
 | Power | 24 V | 12 V / 5 A |
 | Size | 50 × 10 × 11 cm | ≈ 42 × 33 × 15 cm with the tray |
 | Licence | CC BY-NC-SA 4.0 (non-commercial) | GPL-3.0 (commercial use allowed) |

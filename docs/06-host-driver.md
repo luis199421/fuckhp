@@ -60,9 +60,9 @@ reports "out of paper", errors and progress back to CUPS.
 
 ## Wi-Fi, phones, Windows and macOS without installing anything
 
-Put a Raspberry Pi Zero 2 W next to the printer as a print server and every
-device on the network can print to it: see
-[`11-print-server.md`](11-print-server.md).
+Share the CUPS queue from the Linux computer the printer is plugged into
+and every device on the network can print to it, with no extra hardware:
+see [`11-print-server.md`](11-print-server.md).
 
 ## macOS
 

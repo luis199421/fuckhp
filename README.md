@@ -14,7 +14,7 @@ which is still "launching soon"; FreeJet is buildable today and GPL-licensed.
 | Paper | Letter / A4 / Legal / A5 sheets through a straight rear slot, or rolls up to 220 mm |
 | Ink | HP 45 (51645A), ~900 pages, refill with a syringe |
 | Connection | USB; no kernel driver to install on Linux, macOS or Windows |
-| Software | CUPS print queue (Linux), `freejet` command-line tool (all systems), optional Wi-Fi/AirPrint via a Pi Zero 2 W |
+| Software | CUPS print queue (Linux), `freejet` command-line tool (all systems); share it over Wi-Fi from the computer it's plugged into |
 | Build | 23 printed parts (PETG + a little TPU), eight 8 mm rods, 2 NEMA17s, 2 TMC2209s |
 | Cost | about **$135 in parts + $15–30 for a cartridge** ([BOM](docs/bom.csv)) |
 
@@ -68,7 +68,7 @@ which is still "launching soon"; FreeJet is buildable today and GPL-licensed.
 5. [Firmware](docs/07-firmware.md)
 6. [Driver and printing](docs/06-host-driver.md)
 7. [First power-on and calibration](docs/08-calibration.md)
-8. Optional: [Wi-Fi / AirPrint print server on a Pi Zero 2 W](docs/11-print-server.md)
+8. Optional: [share the printer over Wi-Fi](docs/11-print-server.md) (no extra hardware)
 9. [Troubleshooting](docs/09-troubleshooting.md) · [USB protocol](docs/05-protocol.md) · [Roadmap](docs/10-roadmap.md)
 
 ## Quick start (once built)
