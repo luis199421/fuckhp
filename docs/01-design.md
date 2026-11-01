@@ -1,24 +1,33 @@
 # 1. Design: what we kept from OpenPrinter and what we changed
 
-[Open Printer](https://www.crowdsupply.com/open-tools/openprinter) (Open Tools,
+[Openprinter](https://www.crowdsupply.com/open-tools/openprinter) (Open Tools,
 Paris) showed the idea people wanted: a repairable inkjet with no DRM,
-standard cartridges, roll paper and a built-in cutter. It isn't shipping yet,
-its design files are promised only after the final version, and its licence
-is non-commercial. FreeJet takes the same ideas and makes them buildable
-today at home, under the GPL.
+refillable standard cartridges, sheets *or* roll paper and a built-in cutter.
+As of its Sep 2026 update it is still "launching soon" on Crowd Supply, and
+its files will be CC BY-NC-SA 4.0 (non-commercial). FreeJet takes the same
+ideas and makes them buildable today at home, under the GPL.
 
-| | Open Printer (announced) | FreeJet FJ-1 (this repo) |
+| | Openprinter (Crowd Supply page, Nov 2026) | FreeJet FJ-1 (this repo) |
 |---|---|---|
-| Ink | HP 63 / HP 302 (black + colour) | **HP 45 (51645A)**, black; refillable |
-| Why that cartridge | consumer cartridges | the only HP head whose drive signals are publicly reverse-engineered and proven in open projects |
+| Ink | HP 63 (US) / HP 302 (EU), black and/or colour, refillable | **HP 45 (51645A)**, black, refillable |
+| Why that cartridge | common consumer cartridges | the only HP head whose drive signals are publicly reverse-engineered and proven in open projects |
 | Resolution | 600 dpi B/W, 1200 dpi colour | 600 × 600 dpi |
-| Paper | Letter/A4/A3 sheets, roll | Letter/A4/Legal/A5 sheets (rear slot), rolls up to 220 mm |
-| Cutter | integrated | serrated tear-off edge (roll); optional slide cutter later |
-| Frame | sheet metal + parts | **3D-printed** plates/parts on eight 8 mm rods |
-| Electronics | not yet published | Raspberry Pi Pico 2 + 2× TMC2209 + printhead board |
-| Connection | – | **USB**, no kernel driver needed (CDC serial) |
-| Driver | – | CUPS filter + backend (Linux), `freejet` CLI (Windows/macOS/Linux) |
-| Licence | non-commercial, patented | GPL-3.0 |
+| Speed | TBD | ~1 text page/min (estimate) |
+| Paper | Letter, tabloid, 11" roll / A4, A3, 297 mm roll | Letter/A4/Legal/A5 sheets (rear slot), rolls up to 220 mm |
+| Cutter | integrated | serrated tear-off edge (roll); automatic cutter on the roadmap |
+| Frame | standard mechanical components, desk or wall mount | **3D-printed** plates/parts on eight 8 mm rods |
+| Electronics | Raspberry Pi Zero W main board + STM32 cartridge board | Raspberry Pi Pico 2 + 2× TMC2209 + printhead board |
+| User interface | 1.47" TFT + jog wheel | one button + LED (status in the computer's print dialog) |
+| Connection | USB-C, USB-A (print from a stick), Wi-Fi, Bluetooth | **USB** (no kernel driver needed); Wi-Fi/AirPrint with the optional [Pi print server](11-print-server.md) |
+| Driver | CUPS running on the printer's Pi | CUPS filter + backend, `freejet` CLI; same CUPS queue can run on a Pi Zero 2 W |
+| Power | 24 V | 12 V / 5 A |
+| Size | 50 × 10 × 11 cm | ≈ 42 × 33 × 15 cm with the tray |
+| Licence | CC BY-NC-SA 4.0 (non-commercial) | GPL-3.0 (commercial use allowed) |
+
+The main thing we can't match yet is colour: nobody has published how to
+drive HP 63/302 heads, and they carry ID chips. FreeJet's firmware keeps all
+printhead knowledge in one place (`compose.c`, `hp45_map.c`, the head board),
+so a second head type can be added later without touching the host side.
 
 ## Decisions, and why
 

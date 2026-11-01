@@ -2,9 +2,9 @@
 
 A paper printer you print and build yourself: 3D-printed frame, standard
 HP 45 ink cartridge (refillable, no DRM chip games), a $5 Raspberry Pi
-Pico 2 for brains, and its own driver over USB. Inspired by the
-[Open Printer](https://www.crowdsupply.com/open-tools/openprinter) concept,
-but buildable today and GPL-licensed.
+Pico 2 for brains, and its own driver over USB. Inspired by
+[Openprinter](https://www.crowdsupply.com/open-tools/openprinter) (Open Tools),
+which is still "launching soon"; FreeJet is buildable today and GPL-licensed.
 
 ![FreeJet FJ-1 assembly, rear view](docs/img/assembly_rear.png)
 
@@ -14,7 +14,7 @@ but buildable today and GPL-licensed.
 | Paper | Letter / A4 / Legal / A5 sheets through a straight rear slot, or rolls up to 220 mm |
 | Ink | HP 45 (51645A), ~900 pages, refill with a syringe |
 | Connection | USB; no kernel driver to install on Linux, macOS or Windows |
-| Software | CUPS print queue (Linux), `freejet` command-line tool (all systems) |
+| Software | CUPS print queue (Linux), `freejet` command-line tool (all systems), optional Wi-Fi/AirPrint via a Pi Zero 2 W |
 | Build | 23 printed parts (PETG + a little TPU), eight 8 mm rods, 2 NEMA17s, 2 TMC2209s |
 | Cost | about **$135 in parts + $15–30 for a cartridge** ([BOM](docs/bom.csv)) |
 
@@ -68,7 +68,8 @@ but buildable today and GPL-licensed.
 5. [Firmware](docs/07-firmware.md)
 6. [Driver and printing](docs/06-host-driver.md)
 7. [First power-on and calibration](docs/08-calibration.md)
-8. [Troubleshooting](docs/09-troubleshooting.md) · [USB protocol](docs/05-protocol.md) · [Roadmap](docs/10-roadmap.md)
+8. Optional: [Wi-Fi / AirPrint print server on a Pi Zero 2 W](docs/11-print-server.md)
+9. [Troubleshooting](docs/09-troubleshooting.md) · [USB protocol](docs/05-protocol.md) · [Roadmap](docs/10-roadmap.md)
 
 ## Quick start (once built)
 
@@ -100,8 +101,9 @@ encoder and a software printer.
   Ytec3D**, [HP45-standalone-V4](https://github.com/yvodehaas/HP45-standalone-V4)
   and [HP45-standalone-controller-V4.02](https://github.com/yvodehaas/HP45-standalone-controller-V4.02)
   (GPL-3.0).
-* Concept inspiration: [Open Printer](https://www.crowdsupply.com/open-tools/openprinter)
-  by Open Tools. No Open Printer design files were used (none have been published).
+* Concept inspiration: [Openprinter](https://www.crowdsupply.com/open-tools/openprinter)
+  by Open Tools. No Openprinter files were used (none have been published yet; theirs
+  will be CC BY-NC-SA 4.0).
 * Everything in this repository: **GPL-3.0-or-later** (see [LICENSE](LICENSE)),
   hardware design files included.
 

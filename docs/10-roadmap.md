@@ -19,9 +19,10 @@ Nobody has built one yet. The first build is a prototype.
 2. Build prototype #1, measure the real HP45, fix the carriage dimensions.
 3. Verify pulse width / addresses on a scope, then first prints.
 4. Tune defaults (speeds, feed steps, sensor distances) from the prototype.
-5. IPP Everywhere printer application (e.g. PAPPL-based) so Windows, macOS,
-   iOS and Android can print with no driver at all.
+5. Try the Pi Zero 2 W print server (`docs/11-print-server.md`) with iOS,
+   Android and Windows; later maybe a PAPPL-based IPP Everywhere printer
+   application, and printing straight from a USB stick (as Openprinter plans).
 6. Optional sheet feeder (stack of 20–50 sheets).
-7. Optional automatic cutter for roll mode.
+7. Optional automatic cutter for roll mode (Openprinter has one integrated).
 8. Second cartridge slot for colour, once a colour head is reverse-engineered.
 9. Get a dedicated USB PID from pid.codes.
