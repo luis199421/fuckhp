@@ -15,7 +15,7 @@ ideas and makes them buildable today at home, under the GPL.
 | Speed | TBD | ~1 text page/min (estimate) |
 | Paper | Letter, tabloid, 11" roll / A4, A3, 297 mm roll | Letter/A4/Legal/A5 sheets (rear slot), rolls up to 220 mm |
 | Cutter | integrated | serrated tear-off edge (roll); automatic cutter on the roadmap |
-| Frame | standard mechanical components, desk or wall mount | **3D-printed** plates/parts on eight 8 mm rods |
+| Frame | standard mechanical components, desk or wall mount | **3D-printed** plates, bolted printed platen beam, six 8 mm rods |
 | Electronics | Raspberry Pi Zero W main board + STM32 cartridge board | Raspberry Pi Pico 2 + 2× TMC2209 + printhead board |
 | User interface | 1.47" TFT + jog wheel | one button + LED (status in the computer's print dialog) |
 | Connection | USB-C, USB-A (print from a stick), Wi-Fi, Bluetooth | **USB** (no kernel driver needed); network sharing through the host computer ([how](11-print-server.md)) |
@@ -50,10 +50,11 @@ slot along a fixed left guide, the slowly turning rollers grab it, and a
 lever switch after the rollers finds the leading edge exactly. No bends, no
 pick mechanism, nothing to jam. Rolls feed into the same slot.
 
-**Mechanics: rods + printed plates.** Eight identical 8 mm × 400 mm rods
-give straight, stiff, cheap references for the carriage, the rollers and
-the platen. Everything else prints on a 220 × 220 mm bed in PETG. The
-platen is three ribbed segments, each adjustable for height on set screws.
+**Mechanics: as much printed as possible, steel only where it matters.**
+See [printed vs bought](#printed-vs-bought) below. Six identical 8 mm ×
+400 mm rods are the precision references; everything else prints on a
+220 × 220 mm bed. The platen is three ribbed segments bolted into one beam
+that also braces the frame, with slotted end flanges to set the head gap.
 
 **Motion: steppers, no encoder.** At 600 dpi one pixel is 42.3 µm. A GT2
 20-tooth pulley at 1/16 microstepping moves 12.5 µm per step, and the
@@ -99,7 +100,31 @@ too hot.
 | Interface | USB full speed (CDC-ACM), VID:PID 1209:0001 (test PID) |
 | Power | 12 V / 5 A brick |
 | Size | ≈ 420 × 330 × 150 mm with the tray |
-| Cost | ≈ $120–170 + cartridge, see the BOM |
+| Cost | ≈ $120 + cartridge, see the BOM |
 
 These are calculated design targets. Nobody has built this exact machine yet;
 treat the first build as a prototype and expect to adjust things.
+
+## Printed vs bought
+
+The rule: print a part unless printing it would make the printer less
+reliable or less accurate. What's left to buy, and why:
+
+| Bought part | Why it isn't printed |
+|---|---|
+| 6× 8 mm steel rods | Straightness sets the head gap (1.2 mm) and the roller pressure across the whole page; a printed 376 mm shaft bends and sags over time. Both carriage rails, both driven shafts, the pinch shaft and the star shaft need it. |
+| 3× LM8UU bearings | Printed bushings work but wear and develop play; carriage play = wobbly vertical lines. 70 cents each. |
+| 4× 608 bearings | Drive shafts must turn with no play or the paper feed (banding) drifts. |
+| 2× NEMA17 motors, 2× 20T metal pulleys, toothed idler | A printed pulley on a 5 mm motor shaft slips and wears; the 76T pulleys on the 8 mm shafts *are* printed. |
+| GT2 belts | No printable substitute keeps the length/tooth pitch. |
+| 3× small steel springs | Printed plastic springs creep under constant load and the pinch pressure would fade within weeks. |
+| 2× microswitches, button, LED | Repeatable, cheap, last millions of cycles. |
+| M3 screws/nuts (+1 M5 bolt) | One size everywhere. |
+| Electronics and the cartridge | obviously |
+
+Everything else is printed, including parts that are often bought: shaft
+collars (printed split clamps), the platen and its supports (bolted beam
+instead of two more rods), bearing retention (closed clamped housings instead
+of zip ties), belt clamps (printed GT2 teeth), roller tires, cap seal and
+wiper (TPU), spittoon, roll spindle and cores.
+

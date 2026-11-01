@@ -1,18 +1,18 @@
-// Paper sensor holder: snaps onto the rear platen rod and holds a lever microswitch
-// (KW11-3Z with a ~28 mm lever, 2x M2 holes 9.5 mm apart) so the lever tip pokes
-// ~1.5 mm up through the slot in the first platen segment. Paper pushes it down.
+// Paper sensor holder: bolts to the back face of the platen's rear web (2x M3x12 + nuts)
+// and holds a lever microswitch (KW11-3Z, ~28 mm lever, 2x M2 holes 9.5 mm apart) so the
+// lever tip pokes ~1.5 mm up through the slot in platen segment 0. Paper pushes it down.
 include <../fj.scad>
 module sensor_bracket() {
-z0 = platen_rod_z - 22;
-difference() {
-    union() {
-        translate([sensor_x - 8, platen_rod_y[0] - 7, z0]) cube([16, 14, platen_rod_z + 6 - z0]);
-        translate([sensor_x - 3, sensor_y - 2, z0]) cube([6, platen_rod_y[0] - sensor_y + 2, 6]);
-        translate([sensor_x - 3, sensor_y - 2, z0]) cube([6, 6, 18]);
+    wy = web_y[0] - web_t/2;               // back face of the web
+    difference() {
+        union() {
+            translate([sensor_x - 10, wy - 4, web_z0 + 1]) cube([20, 4, 14]);        // against the web
+            translate([sensor_x - 3, sensor_y - 2, web_z0 - 12]) cube([6, wy - sensor_y + 2, 6]);
+            translate([sensor_x - 3, sensor_y - 2, web_z0 - 12]) cube([6, 6, 18]);  // switch post
+            translate([sensor_x - 3, wy - 6, web_z0 - 12]) cube([6, 6, 27]);
+        }
+        for (x=[sensor_x - 6, sensor_x + 6]) translate([x, wy, -13]) rotate([90,0,0]) cylinder(d=m3, h=20, center=true);
+        for (z=[-4.75, 4.75]) translate([sensor_x, sensor_y + 1, web_z0 + z]) rotate([0,90,0]) cylinder(d=2.2, h=10, center=true);
     }
-    translate([sensor_x, platen_rod_y[0], platen_rod_z]) rotate([0,90,0]) cylinder(d=rod_d + 0.3, h=40, center=true);
-    translate([sensor_x, platen_rod_y[0], platen_rod_z + 6]) cube([20, rod_d - 1.2, 8], center=true);  // snap opening
-    for (z=[-4.75, 4.75]) translate([sensor_x, sensor_y + 1, z0 + 12 + z]) rotate([0,90,0]) cylinder(d=2.2, h=10, center=true);
-}
 }
 sensor_bracket();

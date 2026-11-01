@@ -1,5 +1,7 @@
 // Carriage: holds the HP45, the printhead board and three LM8UU bearings.
 // Print upright as modelled (bottom face on the bed), PETG, 4 walls, 40 % infill, supports OFF.
+// The LM8UU bearings press into closed housings (slide the carriage onto the rails before
+// the second side plate goes on) and are clamped with one M3x16 + nut each.
 // The cartridge drops in from the top; the M3 thumbscrew in the front wall pushes it
 // back against the printhead board's contact pads.
 include <../fj.scad>
@@ -10,15 +12,21 @@ wall_front = front_y + 9;
 rear_y  = back_y - pcb_t - pcb_back - 4;  // back of the board pocket wall
 hx      = carr_w/2;
 
-module bearing_saddle(l) {   // LM8UU seat open towards -Y, held by two zip ties
-    difference() {
-        rotate([0,90,0]) cylinder(d=lm8uu_d+7, h=l, center=true);
-        rotate([0,90,0]) cylinder(d=lm8uu_d+0.3, h=l+1, center=true);
-        translate([0, -12, 0]) cube([l+1, 24, lm8uu_d-3], center=true);            // opening
-    }
+module teardrop(d, h) {      // horizontal hole along X that prints without support
+    rotate([0,90,0]) linear_extrude(h, center=true) rotate(90)
+        hull() { circle(d=d); translate([d/2 * sqrt(2) / 2 * sqrt(2), 0]) square(0.01); polygon([[0, -d/2*0.707], [d/2*1.414, 0], [0, d/2*0.707]]); }
 }
-module ziptie_channel() {    // 4.5 mm wide ring around a bearing seat, cut through everything
-    rotate([0,90,0]) difference() { cylinder(d=lm8uu_d+11, h=4.5, center=true); cylinder(d=lm8uu_d+5, h=5, center=true); }
+module bearing_housing(l) {  // closed LM8UU housing, clamped by one M3 across a slit
+    difference() {
+        union() {
+            rotate([0,90,0]) cylinder(d=lm8uu_d + 7, h=l, center=true);
+            translate([-l/2, -lm8uu_d/2 - 9, -6]) cube([l, 8, 12]);            // clamp lug at the back
+        }
+        teardrop(lm8uu_d + 0.1, l + 1);
+        translate([0, -lm8uu_d/2 - 5, 0]) cube([l + 1, 12, 1.4], center=true);  // slit
+        translate([0, -lm8uu_d/2 - 5, 0]) cylinder(d=m3, h=20, center=true);
+        translate([0, -lm8uu_d/2 - 5, -6.01]) rotate(30) cylinder(d=m3_nut/cos(30), h=3, $fn=6);
+    }
 }
 bearings = [[-13.5, rail_hi_z], [13.5, rail_hi_z], [0, rail_lo_z]];
 
@@ -51,18 +59,21 @@ module body() {
         // rods pass under/over the belt block
         for (z=[rail_lo_z, rail_hi_z]) translate([0, rail_y, z]) rotate([0,90,0])
             cylinder(d=rod_d + 3, h=200, center=true);
-        // belt: run straight through, ends wrap into toothed slots
-        translate([0, belt_front_y, belt_z]) cube([200, 2.2, 6.6], center=true);
-        for (s=[-1,1]) translate([s*(hx - 7), belt_front_y - 3.5, belt_z]) cube([3, 4, 30], center=true);  // belt end loops + zip tie
+        // belt: each end pushes into a toothed slot from its own side (no ties needed)
+        translate([0, belt_front_y, belt_z]) cube([200, 1.6, 6.6], center=true);
+        translate([0, belt_front_y, belt_z]) cube([8, 6, 20], center=true);   // window: check both ends are in
         // lighten the side walls
         for (s=[-1,1]) translate([s*(hx - 2.5) - 3, back_y + 8, carr_z0 + 14]) cube([6, cart_d - 16, carr_z1 - carr_z0 - 22]);
     }
     // bearings: two on the top rail, one on the bottom rail
-    for (b=bearings) translate([b[0], rail_y, b[1]]) bearing_saddle(lm8uu_l + 2);
+    for (b=bearings) translate([b[0], rail_y, b[1]]) bearing_housing(lm8uu_l + 2);
     // cartridge rest tabs (see cart_rest_z in fj.scad)
     if (cart_rest_z > 0) for (s=[-1,1])
         translate([s*(cart_w/2 + 0.3) - (s > 0 ? 0 : 0), back_y + cart_d/2, head_gap + cart_rest_z - 2])
             translate([s > 0 ? -1.2 : -0.5, -6, 0]) cube([1.7, 12, 2]);
+    // GT2 teeth (2 mm pitch) on the slot wall: the belt's teeth lock into them
+    for (x=[-hx + 1 : 2 : -5], x2=[0]) translate([x, belt_front_y + 0.8, belt_z]) cylinder(d=1.0, h=6.6, center=true, $fn=12);
+    for (x=[5 : 2 : hx - 1]) translate([x, belt_front_y + 0.8, belt_z]) cylinder(d=1.0, h=6.6, center=true, $fn=12);
     // board standoffs
     for (x=[-1,1], z=[0,1]) translate([x*(pcb_w/2 - 3.5), back_y - pcb_t - pcb_back, carr_z0 + 4 + z*(pcb_h - 8)])
         difference() {
@@ -71,8 +82,5 @@ module body() {
         }
 }
 
-module carriage() difference() {
-    body();
-    for (b=bearings, s=[-1,1]) translate([b[0] + s*lm8uu_l/4, rail_y, b[1]]) ziptie_channel();
-}
+module carriage() body();
 carriage();

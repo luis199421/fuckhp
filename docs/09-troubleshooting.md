@@ -15,5 +15,5 @@
 | White/dark horizontal stripes every 12.7 mm | Feed calibration: `freejet test feed`. |
 | Smears | Head gap too small, paper cockling, star wheels not spinning freely. |
 | Skewed print | Sheet not along the left guide; pinch pressure unequal left/right. |
-| Ink dries in the nozzles between jobs | Cap not sealing: sled pad height, `home_backoff_um` (park position). |
+| Ink dries in the nozzles between jobs | Cap not sealing: print the cap in softer TPU (85A), check the sled lifts it, `home_backoff_um` (park position). |
 | Firmware reboots during printing | Power: the 12 V brick dips when the head fires; check the head board's 470 µF caps and GND wiring. |

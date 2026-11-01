@@ -15,8 +15,8 @@ which is still "launching soon"; FreeJet is buildable today and GPL-licensed.
 | Ink | HP 45 (51645A), ~900 pages, refill with a syringe |
 | Connection | USB; no kernel driver to install on Linux, macOS or Windows |
 | Software | CUPS print queue (Linux), `freejet` command-line tool (all systems); share it over Wi-Fi from the computer it's plugged into |
-| Build | 23 printed parts (PETG + a little TPU), eight 8 mm rods, 2 NEMA17s, 2 TMC2209s |
-| Cost | about **$135 in parts + $15–30 for a cartridge** ([BOM](docs/bom.csv)) |
+| Build | 27 printed parts (PETG + a little TPU); bought mechanics are only 6 steel rods, 7 bearings, 2 motors, belts, 3 springs, 2 switches and M3 screws ([why](docs/01-design.md#printed-vs-bought)) |
+| Cost | about **$120 in parts + $15–30 for a cartridge** ([BOM](docs/bom.csv)) |
 
 > **Status: design complete, not yet built.** The driver, firmware and CAD
 > are written and tested in software (see [status](docs/10-roadmap.md)),

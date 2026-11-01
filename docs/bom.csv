@@ -1,7 +1,5 @@
 group,qty,part,spec,approx_usd_total,notes
-mechanical,8,Smooth rod,8 mm x 400 mm (h8 / chromed),20.00,"2 carriage rails, 2 drive shafts, pinch shaft, star shaft, 2 platen rods"
-mechanical,1,Smooth rod (roll holder),8 mm x 400 mm,2.50,optional
-mechanical,16,Shaft collar,8 mm bore with M4/M3 set screw,5.00,locate the rods on the outside of the plates
+mechanical,6,Smooth rod,8 mm x 400 mm (h8 / chromed),15.00,"2 carriage rails, 2 drive shafts, pinch shaft, star shaft (the platen is a printed beam)"
 mechanical,3,Linear bearing,LM8UU,2.00,
 mechanical,4,Ball bearing,608ZZ (8x22x7),2.00,drive shafts
 mechanical,2,Stepper motor,"NEMA17, 34-40 mm, 1.8 deg, >=0.3 Nm",18.00,carriage and paper feed
@@ -9,16 +7,14 @@ mechanical,2,GT2 pulley,"20T, 5 mm bore, 6 mm belt",3.00,on the two motors
 mechanical,1,GT2 idler,"20T toothed, 5 mm bore",1.50,carriage belt
 mechanical,1,GT2 belt (open),"6 mm, 1 m",3.00,carriage (about 0.9 m used)
 mechanical,1,GT2 belt (closed loop),"6 mm, 400 mm length",2.00,paper feed
-mechanical,1,Screw kit,"M3 x 8/12/16/20 socket head, M3 nuts, M3x8 set screws",6.00,
-mechanical,1,M5 bolt,"M5 x 30 + nut + 2 washers",0.50,idler axle
+mechanical,1,Screw kit,"M3 socket head: ~30x M3x12, ~25x M3x16, 10x M3x20; ~45 M3 nuts; 10x M3x8 set screws",5.00,every screw in the printer is M3 except the M5 idler bolt and the 4 board screws
+mechanical,1,M5 bolt,M5 x 30 + nut + 2 washers,0.50,idler axle
 mechanical,4,Screw,M2.5 x 6 self-tapping,0.50,head board
-mechanical,2,Extension spring,"~5 x 25 mm, light",1.00,pull the pinch shaft down (rubber bands work)
-mechanical,10,Zip tie,100 mm,1.00,bearings and platen
-mechanical,1,Service bits,"3 mm EVA foam or silicone (cap), 1 mm rubber strip (wiper), felt/sponge (spittoon)",2.00,
+mechanical,3,Extension spring,"~5 x 25 mm, light",1.00,"2 pull the pinch shaft down, 1 returns the cap sled. Printed springs creep, so these stay steel"
 mechanical,2,Lever microswitch,KW11-3Z with ~28 mm lever,1.50,home + paper sensor
 mechanical,1,Push button,12 mm panel button,0.50,front panel
 mechanical,1,LED,5 mm + 330 ohm,0.20,front panel
-mechanical,1,Filament,PETG ~0.8 kg + TPU 95A ~30 g,16.00,TPU only for the tires (O-rings work too)
+mechanical,1,Filament,PETG ~0.85 kg + TPU 95A ~40 g,16.00,"TPU: tires, cap, wiper, clamp pad"
 electronics,1,Raspberry Pi Pico 2,RP2350,5.00,must be the Pico 2: the RP2040 Pico is too slow for the motion interrupt
 electronics,2,Stepper driver,TMC2209 StepStick (MS1/MS2 high = 1/16),8.00,A4988 also works (louder)
 electronics,2,Capacitor,100 uF 25 V,0.40,one per stepper driver

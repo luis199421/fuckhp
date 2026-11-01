@@ -71,7 +71,7 @@ overlap (decrease). Fine-tune with `freejet param set y_steps_per_m …`.
 ## 7. Head gap
 
 1.0–1.5 mm between the nozzle plate and the paper. Too close smears on
-cockled paper, too far makes fuzzy text. Adjust with the platen set screws.
+cockled paper, too far makes fuzzy text. Adjust with the platen beam's slotted end flanges.
 
 ## Useful parameters
 

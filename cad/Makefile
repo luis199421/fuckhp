@@ -25,8 +25,12 @@ PARTS = \
   paper_tray_right:paper_tray.scad:PART="right" \
   paper_guide:paper_tray.scad:PART="guide" \
   tray_bracket:paper_tray.scad:PART="bracket" \
+  service_cap_TPU:service_station.scad:PART="cap" \
+  service_wiper_TPU:service_station.scad:PART="wiper" \
+  rod_collar:rod_collar.scad: \
   roll_arm:roll_holder.scad:PART="arm" \
-  roll_core:roll_holder.scad:PART="core"
+  roll_core:roll_holder.scad:PART="core" \
+  roll_spindle:roll_holder.scad:PART="spindle"
 
 pname = $(word 1,$(subst :, ,$1))
 pfile = $(word 2,$(subst :, ,$1))

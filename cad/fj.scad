@@ -36,8 +36,12 @@ shaft_z   = -tire_od/2;
 pinch_z   = tire_od/2;
 star_od   = 18;
 star_z    = star_od/2;
-platen_rod_y = [-40, 26];
-platen_rod_z = -13;
+// platen = a printed beam of 3 bolted segments that also braces the frame
+web_y     = [-40, -10, 22, 74];   // stiffening webs under the platen (run along X)
+web_t     = 4;
+web_z0    = -18;                  // bottom of the webs
+flange_y  = [-40, 74];            // the two outer webs bolt to the side plates
+flange_z  = [-9, -16];            // M3 bolt heights in the plates (vertical slots in the flanges)
 platen_y0 = -62;     // platen top surface extent
 platen_y1 = 84;
 sensor_y  = -54;     // paper lever switch
@@ -86,6 +90,9 @@ module nema17_holes(l=20, slot=0) {
         translate([x*nema_hole/2, y*nema_hole/2 + s, 0]) cylinder(d=m3, h=l, center=true);
     hull() for (s=[-slot/2, slot/2]) translate([0, s, 0]) cylinder(d=nema_boss+1, h=l, center=true);
 }
+
+// ---- printed shaft collars --------------------------------------------------------
+collar_od = 20; collar_w = 8;
 
 // ---- carriage details ------------------------------------------------------------
 carr_z0   = head_gap + 2.5;   // carriage walls stop above the nozzle plate

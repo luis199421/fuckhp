@@ -1,9 +1,11 @@
 // Optional roll-paper holder (replaces the rear tray). PART = "arm" (print 2, mirror one in the
-// slicer) or "core" (print 2: cones that centre a 25-76 mm paper core on an 8 mm rod).
-// The rod rests in the arm hooks; the roll unwinds from underneath into the input rollers.
+// slicer), "core" (print 2: cones that centre a 25-76 mm paper core) and "spindle" (print 2,
+// upright, 100 % infill: the two halves plug together and are pinned with an M3x16 + nut).
+// The spindle rests in the arm hooks; the roll unwinds from underneath into the input rollers.
 // Rolls up to 220 mm wide and 90 mm diameter. Thread the paper, then print with --paper roll.
 include <../fj.scad>
 PART = "arm";
+sp_d = 12; sp_half = 130;
 roll_y = plate_y0 - 60; roll_z = 30;
 module arm() {
     difference() {
@@ -17,15 +19,20 @@ module arm() {
         translate([-1, plate_y0, -11]) cube([plate_t + 0.3, 30, 40]);
         for (z=[-6, 16]) translate([plate_t/2, plate_y0 + 10, z]) rotate([0,90,0]) cylinder(d=m3, h=40, center=true);
         // open hook for the rod
-        translate([plate_t - 1, roll_y, roll_z]) rotate([0,90,0]) cylinder(d=rod_d + 1, h=10);
-        translate([plate_t - 1, roll_y - (rod_d + 1)/2, roll_z]) cube([10, rod_d + 1, 20]);
+        translate([plate_t - 1, roll_y, roll_z]) rotate([0,90,0]) cylinder(d=sp_d + 1, h=10);
+        translate([plate_t - 1, roll_y - (sp_d + 1)/2, roll_z]) cube([10, sp_d + 1, 20]);
     }
 }
 module core() {
     difference() {
         union() { cylinder(d1=78, d2=24, h=26); cylinder(d=40, h=34); }
-        translate([0,0,-1]) cylinder(d=rod_d + 0.4, h=40);
+        translate([0,0,-1]) cylinder(d=sp_d + 0.4, h=40);
         translate([0,0,30]) rotate([0,90,0]) cylinder(d=2.7, h=30);
     }
 }
-if (PART == "arm") arm(); else core();
+module spindle_half() difference() {       // half of a 12 mm spindle; joins at the spigot
+    union() { cylinder(d=sp_d, h=sp_half); translate([0,0,sp_half]) cylinder(d=6, h=8); }
+    translate([0,0,-1]) cylinder(d=6.3, h=9);         // socket for the other half's spigot
+    for (z=[4, sp_half + 4]) translate([0,0,z]) rotate([90,0,0]) cylinder(d=m3, h=20, center=true);  // cross pin
+}
+if (PART == "arm") arm(); else if (PART == "core") core(); else spindle_half();

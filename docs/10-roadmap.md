@@ -6,7 +6,7 @@
 |---|---|
 | Host driver (CLI, rasteriser, protocol, CUPS filter/backend, emulator) | written and tested in software: 21 tests, including a real CUPS + Ghostscript run |
 | Firmware | written, builds cleanly for the Pico 2; its data path (frames → ring → compose → nozzles) is tested on a PC against the host. Not yet run on hardware. |
-| CAD | 23 parametric parts; every part is a single solid; the carriage's travel passes a collision check. Not yet test-printed; cartridge dimensions are estimates. |
+| CAD | 27 parametric parts; every part is a single solid; the carriage's travel passes a collision check. Not yet test-printed; cartridge dimensions are estimates. |
 | Main board | wiring documented (modules on perfboard) |
 | Printhead board | circuit and netlist done, contact footprint generated; **PCB layout still to draw** |
 

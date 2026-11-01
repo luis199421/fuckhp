@@ -1,6 +1,6 @@
 // Side plate - print one with RIGHT=false and one with RIGHT=true.
-// Prints flat (8 mm), PETG, 4 walls, 40 % infill. Rods are located by 8 mm
-// shaft collars on the outside of the plates.
+// Prints flat (8 mm), PETG, 4 walls, 40 % infill. Rods are located by printed
+// collars (rod_collar.scad) on the outside of the plates; the platen beam bolts on inside.
 include <../fj.scad>
 RIGHT = false;
 
@@ -18,10 +18,10 @@ module side_plate(right=false) {
     inner = right ? 0 : plate_t;          // local X of the face that looks into the printer
     difference() {
         rotate([90,0,90]) linear_extrude(plate_t) plate2d();
-        // fixed rods: carriage rails and platen rods
-        for (p=[[rail_y, rail_lo_z], [rail_y, rail_hi_z], [platen_rod_y[0], platen_rod_z],
-                [platen_rod_y[1], platen_rod_z]])
-            translate([0, p[0], p[1]]) rotate([0,90,0]) rod_hole(40, rod_d+0.2);
+        // carriage rails
+        for (z=[rail_lo_z, rail_hi_z]) translate([0, rail_y, z]) rotate([0,90,0]) rod_hole(40, rod_d+0.2);
+        // platen beam flange bolts (M3 + nut on the outside)
+        for (y=flange_y, z=flange_z) translate([0, y, z]) rotate([0,90,0]) cylinder(d=m3, h=40, center=true);
         // 608 bearings for the two drive shafts, pocket opens to the inside
         for (y=[in_y, out_y]) translate([0, y, shaft_z]) rotate([0,90,0]) {
             cylinder(d=12, h=40, center=true);

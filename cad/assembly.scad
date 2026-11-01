@@ -13,6 +13,7 @@ use <parts/x_idler_bracket.scad>
 use <parts/sensor_bracket.scad>
 use <parts/electronics_tray.scad>
 use <parts/paper_tray.scad>
+use <parts/rod_collar.scad>
 
 CARR_X = 180;
 SHOW_PAPER = true;
@@ -39,6 +40,13 @@ module rollers() {
     color("white") for (y=[in_y, out_y]) translate([inner_w + plate_t + 4, y, shaft_z]) rotate([0,90,0]) gt2_pulley_76t();
 }
 
+module collars() color("SteelBlue") {
+    for (p=[[rail_y, rail_lo_z], [rail_y, rail_hi_z], [in_y, shaft_z], [out_y, shaft_z], [in_y, pinch_z], [out_y, star_z]]) {
+        translate([-plate_t - collar_w, p[0], p[1]]) rotate([0,90,0]) rod_collar();
+        translate([inner_w + plate_t, p[0], p[1]]) rotate([0,90,0]) rod_collar();
+    }
+}
+
 module motors() {
     color("#333") {
         translate([-plate_t - 26 - 21, belt_y - 21, belt_z - 14 - 40]) cube([42, 42, 40]);           // X motor
@@ -55,8 +63,8 @@ module moving_carriage(x) { translate([x, 0, 0]) { color("Gold") carriage(); car
 
 static_parts();
 rollers();
+collars();
 motors();
 for (z=[rail_lo_z, rail_hi_z]) rod(rail_y, z);
-for (y=platen_rod_y) rod(y, platen_rod_z);
 moving_carriage(CARR_X);
 if (SHOW_PAPER) color("white", 0.6) translate([paper_x0, -150, 0]) cube([215.9, 279.4, 0.1]);

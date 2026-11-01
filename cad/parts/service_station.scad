@@ -2,17 +2,17 @@
 // carriage HOME switch. Screws to the inner face of the LEFT plate (2x M3).
 //
 //  - cap: a sled in an inclined channel. When the carriage moves left its left face meets the
-//    sled's post, pushes the sled down-the-X / up-the-ramp, and the soft pad (cut 12x14 mm from
-//    3 mm EVA foam or silicone) presses on the nozzle plate so the ink can't dry. A rubber band
-//    from the sled hook to the base hook pulls it back out.
+//    sled's post, pushes the sled down-the-X / up-the-ramp, and the printed TPU cap
+//    (PART="cap": a soft cup with a sealing lip) presses on the nozzle plate so the ink can't
+//    dry. A small extension spring from the sled hook to the base hook pulls it back out.
 //  - home switch: at the end of the sled's travel the sled presses a KW11 microswitch sitting
 //    in the pocket under the channel. That is "X = 0" for the firmware (carriage centre 30 mm).
-//  - wiper: a 1 mm strip of silicone/rubber (cut from a windscreen wiper) clamped upright; the
-//    nozzle plate drags across it on every trip to the park position.
-//  - spittoon: a cup with felt / kitchen sponge; the firmware fires every nozzle into it before
-//    each page so the first lines come out clean.
+//  - wiper: a printed TPU blade (PART="wiper") clamped upright; the nozzle plate drags
+//    across it on every trip to the park position.
+//  - spittoon: a printed cup; the firmware fires every nozzle into it before each page so the
+//    first lines come out clean. The baffles stop splashes. Empty/rinse it every few months.
 include <../fj.scad>
-PART = "base";   // "base" or "sled"
+PART = "base";   // "base", "sled", "cap" (TPU) or "wiper" (TPU)
 ramp_a = 24;      // channel angle: 9 mm of travel lifts the cap ~4 mm
 chan_len = 46;
 base_top = -6;
@@ -39,7 +39,7 @@ module base() {
         // wiper slot + clamp screw
         translate([wiper_x, 0, base_top + 2]) cube([1.6, 23, 12], center=true);
         translate([wiper_x + 3, 0, base_top + 2]) rotate([0,90,0]) cylinder(d=2.7, h=12, center=true);
-        // spittoon cup
+        // spittoon cup (baffles added back below)
         translate([spit_x, 0, base_top - 16]) cylinder(d=13, h=24);
         // wiring channel
         translate([4, -2, -31]) cube([10, 4, 10]);
@@ -61,6 +61,26 @@ module sled() {   // drawn in its retracted position
     }
 }
 
-module service_base() base();
+module spit_baffles() intersection() {
+    translate([spit_x, 0, base_top - 16]) cylinder(d=13, h=12);
+    for (a=[0, 60, 120]) translate([spit_x, 0, base_top - 10]) rotate(a) cube([14, 1, 12], center=true);
+}
+
+// TPU 85A-95A, 100 % infill: a shallow cup whose 1 mm lip seals around the nozzle plate.
+module cap() difference() {
+    translate([-6.4, -7.4, 0]) cube([12.8, 14.8, 3.6]);
+    translate([-5.4, -6.4, 2]) cube([10.8, 12.8, 3]);
+}
+
+// TPU 95A: 0.9 mm blade. Clamp it so it stands 0.5 mm above the nozzle plate.
+module wiper() union() {
+    translate([-11, 0, 0]) cube([22, 0.9, 12]);
+    translate([-11, -0.35, 0]) cube([22, 1.6, 5]);     // thicker clamped part
+}
+
+module service_base() union() { base(); spit_baffles(); }
 module service_sled() sled();
-if (PART == "base") base(); else sled();
+if (PART == "base") service_base();
+else if (PART == "sled") sled();
+else if (PART == "cap") cap();
+else wiper();
