@@ -96,12 +96,12 @@ class EmuLink:
 
 def test_transport_against_emulator():
     with Printer(link=EmuLink(), timeout=2) as pr:
-        assert pr.info()["rows"] == 300
-        assert pr.get_param(40) == 1800
-        pr.set_param(40, 1700)
-        assert pr.get_param(40) == 1700
+        assert pr.info()["rows"] == 324
+        assert pr.get_param(42) == 40          # spit_count
+        pr.set_param(42, 70)
+        assert pr.get_param(42) == 70
         with pytest.raises(PrinterError):
-            pr.set_param(40, 99999)          # out of range -> error ack
+            pr.set_param(42, 99999)          # out of range -> error ack
         events = []
         pr.stream(job_frames([random_page(4, 900, 3000)]), events.append)
         assert events[-1]["event"] == "job_done"

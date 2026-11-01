@@ -16,11 +16,15 @@ class Sequencer:
         return P.frame(mtype, payload, self.seq)
 
 
+SHEET_BOTTOM_MM = 22.0    # single feed roller: the last ~22 mm of a sheet can't be printed
+
+
 def job_frames(pages: Iterable[np.ndarray], *, bidirectional: bool = True,
                roll: bool = False, cut_pause: bool = False, max_cols: int = 5184,
-               ring_bytes: int = 262144, inkset: str = "K") -> Iterator[bytes]:
+               ring_bytes: int = 262144, inkset: str = "K", warn=None) -> Iterator[bytes]:
     """Yield protocol frames for a whole job. `pages` may be a lazy iterator of
-    (rows, cols) or (planes, rows, cols) arrays; planes must match the ink set."""
+    (rows, cols) or (planes, rows, cols) arrays; planes must match the ink set.
+    On sheets, ink in the last SHEET_BOTTOM_MM is dropped (and `warn` is called)."""
     from .color import INKSET_IDS, INKSETS
     n_planes = len(INKSETS[inkset])
     f = Sequencer()
@@ -32,6 +36,14 @@ def job_frames(pages: Iterable[np.ndarray], *, bidirectional: bool = True,
             raise ValueError(f"page has {1 if page.ndim == 2 else page.shape[0]} planes, "
                              f"ink set {inkset} needs {n_planes}")
         length_um = round(page.shape[-2] * P.UM_PER_COL) if roll else 0
+        if not roll:
+            cut = page.shape[-2] - round(SHEET_BOTTOM_MM / 25.4 * P.DPI)
+            if cut > 0 and page[..., cut:, :].any():
+                page = page.copy()
+                page[..., cut:, :] = False
+                if warn:
+                    warn(f"content in the bottom {SHEET_BOTTOM_MM:.0f} mm of the sheet was not printed "
+                         "(the single feed roller can't hold the sheet there)")
         yield f(P.PAGE_BEGIN, length_um.to_bytes(4, "little") + bytes(4))
         for s in plan_swaths(page, bidirectional, max_cols, max_bytes):
             yield f(P.SWATH_BEGIN, P.swath_begin(s.y_um, s.x0, s.ncols, s.direction, len(s.data),

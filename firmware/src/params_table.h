@@ -15,29 +15,22 @@
     X( 10, X_TRAVEL_UM           ,   300000,    50000,   800000) \
     X( 11, HOME_SPEED_MM_S       ,       25,        2,      100) \
     X( 12, HOME_BACKOFF_UM       ,     3000,        0,    20000) \
-    X( 20, COL0_X_UM             ,    40000,        0,   600000) \
-    X( 21, ROW_GAP_UM            ,     4050,    -8000,     8000) \
+    X( 20, COL0_X_UM             ,    40000,        0,   800000) \
     X( 22, BIDIR_OFFSET_UM       ,        0,    -2000,     2000) \
-    X( 23, NOZZLE0_DOWNSTREAM    ,        1,        0,        1) \
-    X( 24, SENSOR_TO_NOZZLE_UM   ,    60000,        0,   300000) \
-    X( 25, EJECT_UM              ,   120000,        0,   500000) \
+    X( 24, SENSOR_TO_NOZZLE_UM   ,    31000,        0,   300000) \
+    X( 25, EJECT_UM              ,    40000,        0,   500000) \
     X( 26, SPIT_X_UM             ,    32000,        0,   300000) \
     X( 27, MAX_COLS              ,     5184,      100,     7000) \
     X( 28, CUTTER_UM             ,    78000,        0,   200000) \
-    X( 40, PULSE_NS              ,     1800,      500,     2400) \
-    X( 41, PRIM_GROUPS           ,        3,        1,        4) \
+    X( 29, SHEET_TAIL_UM         ,    17000,        0,   100000) \
+    X( 40, CARTRIDGES            ,        1,        1,        3) \
+    X( 41, K_ROW_GAP_UM          ,     4000,    -8000,     8000) \
     X( 42, SPIT_COUNT            ,       40,        0,     2000) \
-    X( 43, TSR_MIN               ,      200,        0,     4095) \
-    X( 44, TSR_MAX               ,     3900,        0,     4095) \
-    X( 45, TSR_HOT_DELTA         ,      400,       10,     4095) \
-    X( 46, VHD_MIN_MV            ,    10500,     5000,    16000) \
-    X( 47, N_HEADS               ,        1,        1,        4) \
-    X( 48, HEAD1_X_UM            ,    28000,     5000,   150000) \
-    X( 49, HEAD2_X_UM            ,    56000,     5000,   150000) \
-    X( 50, HEAD3_X_UM            ,    84000,     5000,   150000) \
-    X( 51, HEAD1_DY_ROWS         ,        0,       -6,        6) \
-    X( 52, HEAD2_DY_ROWS         ,        0,       -6,        6) \
-    X( 53, HEAD3_DY_ROWS         ,        0,       -6,        6) \
+    X( 43, COLOR_X_UM            ,    25000,   -60000,    60000) \
+    X( 44, CMY_PITCH_UM          ,     4000,   -10000,    10000) \
+    X( 45, K_DY_ROWS             ,       78,        0,      156) \
+    X( 46, VHD_MIN_MV            ,    14500,     5000,    20000) \
+    X( 47, NOZZLE_FLIP           ,        0,        0,        1) \
     X( 60, IDLE_MOTOR_OFF_S      ,       30,        0,     3600) \
     X( 61, JOB_TIMEOUT_S         ,      120,        5,     3600) \
 

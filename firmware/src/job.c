@@ -43,8 +43,10 @@ static uint8_t state = FJ_ST_IDLE, last_event;
 static uint16_t last_error, pages_done;
 static bool job_active, job_failed, roll_mode, homed, abort_req;
 static int32_t paper_y_um, page_length_um;
-static uint16_t tsr_cold[FJ_MAX_PLANES];
 static int job_planes = 1;
+static int job_inkset = FJ_INK_K;
+static bool tail_seen;                        // sheet: trailing edge has passed the sensor
+static int32_t tail_y_um;
 static uint32_t idle_since_ms;
 static fj_pass_t pass;
 
@@ -79,12 +81,12 @@ static void send_status(void) {
     fj_status_t s = {0};
     s.state = state;
     s.flags = (homed ? FJ_FL_HOMED : 0) | (sensors_paper() ? FJ_FL_PAPER : 0) |
-              (sensors_head_present() ? FJ_FL_HEAD : 0) | (head_powered() ? FJ_FL_HEAD_POWER : 0) |
+              FJ_FL_HEAD | (head_powered() ? FJ_FL_HEAD_POWER : 0) |
               (motion_enabled() ? FJ_FL_MOTORS : 0) | (job_active ? FJ_FL_JOB : 0) |
               (state == FJ_ST_WAIT_PAPER ? FJ_FL_WAIT_PAPER : 0) |
               (state == FJ_ST_WAIT_BUTTON ? FJ_FL_WAIT_BUTTON : 0);
     s.error = last_error;
-    s.tsr = sensors_tsr_raw(0);
+    s.tsr = (uint16_t)PRM(CARTRIDGES);       // (field reused: cartridges fitted)
     s.vhd_mv = sensors_vhd_mv();
     s.ring_free = fj_ring_free(&ring);
     s.queue_len = (uint8_t)q_len();
@@ -102,7 +104,7 @@ static void send_info(void) {
     strncpy(i.model, MODEL_NAME, sizeof i.model);
     i.ring_bytes = RING_BYTES;
     i.dpi = FJ_DPI;
-    i.rows = FJ_ROWS;
+    i.rows = FJ_ROWS_K;
     i.max_cols = (uint16_t)PRM(MAX_COLS);
     i.max_payload = FJ_MAX_PAYLOAD;
     comm_send(FJ_INFO, &i, sizeof i);
@@ -135,7 +137,7 @@ void job_handle_frame(const fj_frame_t *f) {
         memcpy(&r, p, sizeof r);
         bool busy = job_active || q_len() || head_busy();
         int code = busy ? FJ_E_BUSY : params_set(r.id, r.value);
-        if (code == FJ_OK) { motion_configure(); head_configure(); }
+        if (code == FJ_OK) { motion_configure(); head_configure(job_inkset); }
         comm_ack(f->seq, f->type, code);
         return;
     }
@@ -145,7 +147,7 @@ void job_handle_frame(const fj_frame_t *f) {
         return;
     case FJ_PARAM_DEFAULTS:
         if (job_active || q_len() || head_busy()) { comm_ack(f->seq, f->type, FJ_E_BUSY); return; }
-        params_defaults(); motion_configure(); head_configure();
+        params_defaults(); motion_configure(); head_configure(job_inkset);
         comm_ack(f->seq, f->type, FJ_OK);
         return;
     case FJ_ABORT:
@@ -261,22 +263,19 @@ static int park(void) {
     return move_x(PRM(HOME_BACKOFF_UM), PRM(X_TRAVEL_SPEED_MM_S));   // cap engages here
 }
 
-static float head_x_um(int h) {      // slot h's nozzles, right of slot 0's
-    const int32_t x[FJ_MAX_PLANES] = {0, PRM(HEAD1_X_UM), PRM(HEAD2_X_UM), PRM(HEAD3_X_UM)};
-    return (float)x[h];
-}
+static bool cart_fitted(int cart) { return PRM(CARTRIDGES) & (1 << cart); }
 
-// nozzle: -1 = every nozzle of every cartridge, else head * 300 + n. Each cartridge in turn
-// is brought over the single spittoon cup.
-static int spit(int nozzle, uint32_t count) {
+// cart: -1 = every fitted cartridge, else 0 black / 1 colour. Each cartridge in turn is
+// brought over the spittoon (the colour cartridge sits color_x + cmy_pitch to the right).
+static int spit(int cart, uint32_t count) {
     if (!homed) { int e = home(); if (e) return e; }
     if (!head_powered()) return FJ_E_NO_VHD;
-    for (int h = 0; h < head_count(); h++) {
-        if (nozzle >= 0 && nozzle / HP45_NOZZLES != h) continue;
-        float x = PRM(SPIT_X_UM) - head_x_um(h);
+    for (int c = 0; c < 2; c++) {
+        if (!cart_fitted(c) || (cart >= 0 && cart != c)) continue;
+        float x = PRM(SPIT_X_UM) - (c ? (float)(PRM(COLOR_X_UM) + PRM(CMY_PITCH_UM)) : 0.0f);
         int e = move_x(x < 0 ? 0 : x, PRM(X_TRAVEL_SPEED_MM_S));
         if (e) return e;
-        head_start_spit(h, nozzle < 0 ? -1 : nozzle % HP45_NOZZLES, count, 500);
+        head_start_spit(c, count, 500);
         while (head_busy()) { service(); if (abort_req) head_abort(); }
         if ((e = head_result())) return e;
     }
@@ -284,52 +283,26 @@ static int spit(int nozzle, uint32_t count) {
 }
 
 static int power_up_head(void) {
-    if (!sensors_head_present()) return FJ_E_NO_HEAD;
     head_power(true);
     absolute_time_t until = make_timeout_time_ms(300);
     while (!time_reached(until)) service();
     if (sensors_vhd_mv() < PRM(VHD_MIN_MV)) { head_power(false); return FJ_E_NO_VHD; }
-    for (int h = 0; h < head_count(); h++) tsr_cold[h] = sensors_tsr_raw(h);
     return FJ_OK;
 }
 
-static int hottest(void) {            // largest TSR change of any cartridge since power-up
-    int d = 0;
-    for (int h = 0; h < head_count(); h++) {
-        int x = abs((int)sensors_tsr_raw(h) - (int)tsr_cold[h]);
-        if (x > d) d = x;
-    }
-    return d;
-}
-
-static int wait_cool(void) {
-    int delta = hottest();
-    if (delta <= PRM(TSR_HOT_DELTA)) return FJ_OK;
-    event(FJ_EV_HEAD_HOT, 0, delta);
-    absolute_time_t until = make_timeout_time_ms(60000);
-    while (hottest() > PRM(TSR_HOT_DELTA) * 7 / 10) {
-        service();
-        if (abort_req) return FJ_E_ABORTED;
-        if (time_reached(until)) return FJ_E_HEAD_HOT;
-    }
-    return FJ_OK;
-}
-
-// Wait for the user to push a sheet into the rollers: the rollers turn slowly
-// so the sheet is grabbed, and stop exactly when its edge reaches the sensor.
+// Wait for the user to push a sheet in until it rests against the feed roller (the paper
+// lever, just before the roller, reports it), then feed its edge to the nozzles.
 static int load_sheet(void) {
-    if (sensors_paper()) return FJ_E_PAPER_JAM;   // a sheet is still inside
+    tail_seen = false;
     event(FJ_EV_PAPER_NEEDED, 0, 0);
     state = FJ_ST_WAIT_PAPER;
-    for (;;) {
-        motion_move(AXIS_Y, motion_pos_um(AXIS_Y) + 400000.0f, 8, PRM(Y_ACCEL_MM_S2), STOP_PAPER_PRESENT);
-        int e = wait_motion(AXIS_Y);
-        if (e) return e;
-        if (motion_stopped_by_sensor(AXIS_Y)) break;
-        // nobody came: wait for the button before trying again
-        state = FJ_ST_WAIT_BUTTON;
-        while (!sensors_button_pressed()) { service(); if (abort_req) return FJ_E_ABORTED; }
-        state = FJ_ST_WAIT_PAPER;
+    uint32_t since = 0;
+    for (;;) {                                  // paper present steadily for 0.8 s, or button
+        service();
+        if (abort_req) return FJ_E_ABORTED;
+        if (!sensors_paper()) since = 0;
+        else if (!since) since = now_ms();
+        if ((since && now_ms() - since > 800) || (sensors_paper() && sensors_button_pressed())) break;
     }
     state = FJ_ST_PRINTING;
     int e = feed_by(PRM(SENSOR_TO_NOZZLE_UM));
@@ -357,21 +330,21 @@ static int do_swath(op_t *o) {
     const fj_swath_begin_t *s = &o->sw;
     if (s->y_um < paper_y_um) return FJ_E_BACKFEED;
     if (!head_powered()) return FJ_E_NO_VHD;
-    int e = wait_cool();
-    if (e) return e;
+    int e;
     if (s->y_um > paper_y_um) {
+        // single feed roller: once the sheet's tail has left the roller it no longer moves
+        if (!roll_mode && tail_seen && s->y_um > tail_y_um + PRM(SHEET_TAIL_UM)) return FJ_E_SHEET_END;
+        int32_t before = paper_y_um;
         e = feed_by((float)(s->y_um - paper_y_um));
         if (e) return e;
         paper_y_um = s->y_um;
+        if (!roll_mode && !tail_seen && !sensors_paper()) { tail_seen = true; tail_y_um = before; }
     }
-    int32_t off_odd = (int32_t)lroundf(PRM(ROW_GAP_UM) / FJ_UM_PER_COL);
-    int heads = head_count();
+    const fj_tables_t *t = head_tables();
     uint32_t starts[FJ_MAX_PLANES], acc = o->start;
-    for (int h = 0; h < heads; h++) { starts[h] = acc; acc += o->plane_len[h]; }
-    int32_t head_off[FJ_MAX_PLANES];
-    for (int h = 0; h < FJ_MAX_PLANES; h++) head_off[h] = (int32_t)lroundf(head_x_um(h) / FJ_UM_PER_COL);
-    fj_pass_setup(&pass, head_tables(), &ring, starts, o->plane_len, s->flags & FJ_SWATH_PACKBITS, heads,
-                  s->x0, s->ncols, s->dir, head_off, off_odd);
+    for (int h = 0; h < t->planes; h++) { starts[h] = acc; acc += o->plane_len[h]; }
+    fj_pass_setup(&pass, t, &ring, starts, o->plane_len, s->flags & FJ_SWATH_PACKBITS,
+                  s->x0, s->ncols, s->dir);
     // never go faster than the head can fire a full column
     float speed = PRM(X_SPEED_MM_S);
     float vmax = FJ_UM_PER_COL / head_column_time_us() * 1000.0f * 0.85f;
@@ -401,7 +374,13 @@ static int exec(op_t *o) {
     switch (o->type) {
     case FJ_JOB_BEGIN: {
         int planes = (o->a >> 8 & 0xFF) ? (o->a >> 8 & 0xFF) : 1;
-        if (planes != head_count()) return FJ_E_INKSET;   // e.g. a CMYK job on a black-only printer
+        int inkset = o->a >> 16 & 0xFF;
+        if (inkset > FJ_INK_KCMY || planes != fj_inkset_planes(inkset)) return FJ_E_BAD_ARG;
+        // e.g. a colour job on a printer with only the black cartridge fitted
+        if ((fj_inkset_uses(inkset, HP302_CART_BLACK) && !cart_fitted(HP302_CART_BLACK)) ||
+            (fj_inkset_uses(inkset, HP302_CART_COLOR) && !cart_fitted(HP302_CART_COLOR))) return FJ_E_INKSET;
+        job_inkset = inkset;
+        head_configure(inkset);
         job_active = true;
         roll_mode = o->a & FJ_JOB_ROLL;
         pages_done = 0;
@@ -466,13 +445,13 @@ static int exec(op_t *o) {
         bool was = head_powered();
         int e = was ? FJ_OK : power_up_head();
         if (e) return e;
-        int nozzle = -1;
+        int cart = -1;
         uint32_t count = o->a & 0xFFFF;
-        if (o->type == FJ_NOZZLE_FIRE) {   // nozzle = head * 300 + n, 0xFFFF = all
-            nozzle = (o->a & 0xFFFF) == 0xFFFF ? -1 : (o->a & 0xFFFF);
+        if (o->type == FJ_NOZZLE_FIRE) {   // u16 cartridge (0 black, 1 colour, 0xFFFF both), u16 count
+            cart = (o->a & 0xFFFF) == 0xFFFF ? -1 : (o->a & 1);
             count = (uint32_t)o->a >> 16;
         }
-        e = spit(nozzle, count ? count : 100);
+        e = spit(cart, count ? count : 100);
         if (!was && !job_active) head_power(false);
         if (!e) e = park();
         return e;

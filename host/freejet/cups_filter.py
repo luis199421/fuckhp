@@ -67,7 +67,8 @@ def main(argv=None):
             yield page
 
     out = sys.stdout.buffer
-    for fr in job_frames(pages(), bidirectional=bidir, roll=roll, cut_pause=cut_pause, inkset=inkset):
+    for fr in job_frames(pages(), bidirectional=bidir, roll=roll, cut_pause=cut_pause, inkset=inkset,
+                         warn=lambda m: log(f"WARNING: {m}")):
         out.write(fr)
     out.flush()
     return 0

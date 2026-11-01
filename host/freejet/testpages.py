@@ -2,7 +2,7 @@
 import numpy as np
 from PIL import Image, ImageDraw, ImageFont
 
-from .protocol import DPI, ROWS
+from .protocol import DPI, ROWS_COLOR, ROWS_K
 
 MM = DPI / 25.4
 
@@ -23,7 +23,7 @@ def _ink(img):
     return ~np.asarray(img, dtype=bool)
 
 
-def nozzle_check(width_mm=200) -> np.ndarray:
+def nozzle_check(width_mm=200, rows=ROWS_K, step=1) -> np.ndarray:
     """Every nozzle draws its own short dash. A missing dash = clogged/dead nozzle.
     Dashes are staggered in 10 columns so neighbours never touch; row r is in
     column r % 10. A solid block underneath shows overall density."""
@@ -36,15 +36,15 @@ def nozzle_check(width_mm=200) -> np.ndarray:
     dash = round(6 * MM)
     gap = round(2 * MM)
     x0 = round(5 * MM)
-    for r in range(ROWS):
-        x = x0 + (r % 10) * (dash + gap)
+    for i, r in enumerate(range(0, rows, step)):     # step 2: colour nozzles are 1/300 in apart
+        x = x0 + (i % 10) * (dash + gap)
         page[top + r, x:x + dash] = True
     # density block + row labels every 50 rows
     bx = x0 + 10 * (dash + gap) + round(4 * MM)
-    page[top:top + ROWS, bx:bx + round(25 * MM)] = True
-    lab = Image.new("1", (round(30 * MM), ROWS + 40), 1)
+    page[top:top + rows:step, bx:bx + round(25 * MM)] = True
+    lab = Image.new("1", (round(30 * MM), rows + 40), 1)
     ld = ImageDraw.Draw(lab)
-    for r in range(0, ROWS, 50):
+    for r in range(0, rows, 50):
         ld.text((0, r), f"{r}", font=_font(30), fill=0)
     la = _ink(lab)
     lx = bx + round(28 * MM)
@@ -53,7 +53,7 @@ def nozzle_check(width_mm=200) -> np.ndarray:
 
 
 def alignment_page(odd_rows: np.ndarray, span=6, width_mm=200) -> np.ndarray:
-    """odd_rows: bool[300], True for data rows driven by the odd nozzle column."""
+    """odd_rows: bool[324], True for data rows printed by the black cartridge's nozzle row 1."""
     img, d = _canvas(width_mm, 45)
     f = _font(round(2.8 * MM))
     d.text((round(5 * MM), 0), "Row alignment: pick the block with single sharp lines -> "
@@ -67,8 +67,8 @@ def alignment_page(odd_rows: np.ndarray, span=6, width_mm=200) -> np.ndarray:
         bx = i * block_w + round(2 * MM)
         for line in range(6):
             x = bx + line * round(1.6 * MM)
-            page[top:top + ROWS, x] |= ~odd_rows          # even column nozzles
-            page[top:top + ROWS, x + k] |= odd_rows        # odd column, shifted by k
+            page[top:top + ROWS_K, x] |= ~odd_rows          # nozzle row 0
+            page[top:top + ROWS_K, x + k] |= odd_rows        # nozzle row 1, shifted by k
     return page
 
 
@@ -79,14 +79,14 @@ def bidir_page(span=6, width_mm=200) -> tuple[np.ndarray, int]:
     `freejet calibrate bidir <k>`. Labels go *below* the lines so that the lines
     really are the first two passes. Returns (page, row where pass 2 starts)."""
     block_w = round(width_mm * MM / (2 * span + 1))
-    h = 2 * ROWS + round(16 * MM)
+    h = 2 * ROWS_K + round(16 * MM)
     page = np.zeros((h, round(width_mm * MM)), dtype=bool)
     for i, k in enumerate(range(-span, span + 1)):
         bx = i * block_w + round(2 * MM) + span
         for line in range(6):
             x = bx + line * round(1.6 * MM)
-            page[0:ROWS, x] = True
-            page[ROWS:2 * ROWS, x + k] = True
+            page[0:ROWS_K, x] = True
+            page[ROWS_K:2 * ROWS_K, x + k] = True
     img, d = _canvas(width_mm, 14)
     f = _font(round(2.8 * MM))
     for i, k in enumerate(range(-span, span + 1)):
@@ -94,8 +94,8 @@ def bidir_page(span=6, width_mm=200) -> tuple[np.ndarray, int]:
     d.text((round(5 * MM), round(7 * MM)), "Bidirectional: pick the block whose lines are straight -> "
            "freejet calibrate bidir <k>", font=f, fill=0)
     lab = _ink(img)
-    page[2 * ROWS + 20:2 * ROWS + 20 + lab.shape[0], :lab.shape[1]] |= lab[:h - 2 * ROWS - 20]
-    return page, ROWS
+    page[2 * ROWS_K + 20:2 * ROWS_K + 20 + lab.shape[0], :lab.shape[1]] |= lab[:h - 2 * ROWS_K - 20]
+    return page, ROWS_K
 
 
 def feed_page(length_mm=250.0, width_mm=200) -> np.ndarray:
@@ -118,38 +118,44 @@ def feed_page(length_mm=250.0, width_mm=200) -> np.ndarray:
     return page
 
 
-def heads_page(n_heads: int, span=6, width_mm=200) -> np.ndarray:
-    """Line up cartridges 1..n-1 against cartridge 0 (slot 0 = left-most).
-    For each slot two rows of 13 blocks (k = -6..+6):
-      X: vertical lines, slot 0 at x, slot s at x + k  -> pick the block where they merge,
-         then  freejet calibrate head-x <slot> <k>
-      Y: short horizontal dashes, slot 0 at row y, slot s at row y + k -> pick the block where
-         they form one straight line, then  freejet calibrate head-y <slot> <k>
+def colors_page(planes_n: int, span=6, width_mm=200) -> np.ndarray:
+    """Line the inks up. Plane 0 is the reference (black in KCMY, cyan in CMY); every other
+    plane s is compared with plane s-1:
+      X blocks: vertical lines, plane s-1 at x, plane s at x + k -> pick where they merge:
+                KCMY: slot 1 (C vs K) -> calibrate color-x <k>; slots 2, 3 (M vs C, Y vs M)
+                -> calibrate cmy-pitch <k>  (CMY: slots 1, 2 -> cmy-pitch)
+      Y blocks (KCMY only): black dash shifted k rows against a cyan dash -> calibrate k-dy <k>
     Returns (planes, rows, cols)."""
     w = round(width_mm * MM)
     block_w = w // (2 * span + 1)
-    band = 2 * ROWS + round(14 * MM)
-    planes = np.zeros((n_heads, max(1, n_heads - 1) * band + 60, w), dtype=bool)
-    for s in range(1, n_heads):
-        top = (s - 1) * band
+    band = 2 * ROWS_COLOR + round(16 * MM)
+    rows = (planes_n - 1) * band + (band if planes_n == 4 else 0) + 60
+    planes = np.zeros((planes_n, rows, w), dtype=bool)
+    f = _font(round(2.6 * MM))
+
+    def label(top, text):
         img, d = _canvas(width_mm, 12)
-        f = _font(round(2.6 * MM))
-        d.text((0, 0), f"slot {s}:  X blocks (top) -> calibrate head-x {s} <k>;  "
-                       f"Y blocks (bottom) -> calibrate head-y {s} <k>", font=f, fill=0)
+        d.text((0, 0), text, font=f, fill=0)
         for i, k in enumerate(range(-span, span + 1)):
             d.text((i * block_w + round(2 * MM), round(5.5 * MM)), f"{k:+d}", font=f, fill=0)
         lab = _ink(img)
         planes[0, top:top + lab.shape[0], :lab.shape[1]] |= lab
-        y0 = top + lab.shape[0] + 10
+        return top + lab.shape[0] + 10
+
+    for s in range(1, planes_n):
+        y0 = label((s - 1) * band, f"X: plane {s} vs plane {s - 1}")
         for i, k in enumerate(range(-span, span + 1)):
             bx = i * block_w + round(2 * MM) + span
-            for line in range(5):                     # X: vertical lines
+            for line in range(5):
                 x = bx + line * round(1.6 * MM)
-                planes[0, y0:y0 + 120, x] = True
-                planes[s, y0:y0 + 120, x + k] = True
-            yy = y0 + 160 + 40                        # Y: dashes side by side
-            planes[0, yy, bx:bx + 60] = True
-            planes[s, yy + k, bx + 60:bx + 120] = True
-            planes[0, yy + 60, bx:bx + 60] = True
-            planes[s, yy + 60 + k, bx + 60:bx + 120] = True
+                planes[s - 1, y0:y0 + ROWS_COLOR:2, x] = True
+                planes[s, y0:y0 + ROWS_COLOR:2, x + k] = True
+    if planes_n == 4:
+        y0 = label(3 * band, "Y: black dash vs cyan dash -> calibrate k-dy <k>") + 20
+        y0 += y0 % 2
+        for i, k in enumerate(range(-span, span + 1)):
+            bx = i * block_w + round(2 * MM) + span
+            for yy in (y0, y0 + 60):
+                planes[1, yy, bx + 60:bx + 120] = True          # cyan (even row)
+                planes[0, yy + k, bx:bx + 60] = True            # black, shifted k rows
     return planes

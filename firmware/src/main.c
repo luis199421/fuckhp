@@ -1,4 +1,4 @@
-// FreeJet FJ-1 firmware entry point (Raspberry Pi Pico 2 / RP2350).
+// FreeJet FJ-2 firmware entry point (Raspberry Pi Pico 2 / RP2350).
 #include <stdio.h>
 #include "comm.h"
 #include "config.h"
@@ -16,14 +16,14 @@ int main(void) {
     gpio_set_dir(PIN_HEAD_PWR, GPIO_OUT);
     gpio_put(PIN_HEAD_PWR, 0);
 
-    stdio_init_all();   // no console: GP0/GP1 drive the TSR multiplexer
+    stdio_init_all();
     bool stored = params_load();
     sensors_init();
     motion_init();
     head_init();        // also starts core1
     job_init();
     comm_init(job_accept, job_handle_frame);
-    printf("FreeJet FJ-1 firmware %d.%d, params %s, watchdog reset: %s\n", 0, 1,
+    printf("FreeJet FJ-2 firmware %d.%d, params %s, watchdog reset: %s\n", 2, 0,
            stored ? "from flash" : "defaults", watchdog_caused_reboot() ? "yes" : "no");
     watchdog_enable(2000, true);
     job_run();

@@ -16,14 +16,16 @@ from dataclasses import dataclass
 MAGIC = b"FJ"
 HEADER = struct.Struct("<2sBBI")
 MAX_PAYLOAD = 16384
-PROTO_VERSION = 1
+PROTO_VERSION = 2
 
 DPI = 600
-ROWS = 300                    # nozzles per pass
-ROWS_MULTI = 288              # rows used per pass with 2+ cartridges: 6 spare nozzles at each
-                              # end let the firmware line the cartridges up vertically
+# HP 63/302 cartridges: the black one prints 324 rows (1/600 in) per pass, the colour one
+# 84 rows per colour at 1/300 in = 168 rows of 1/600 in. Columns carry 336 bits (42 bytes).
+ROWS_K = 324                  # rows per pass, black cartridge only
+ROWS_COLOR = 168              # rows per pass when the colour cartridge is used
+ROWS = 336                    # bits per column in the data format
 MAX_PLANES = 4
-COL_BYTES = (ROWS + 7) // 8   # 38 bytes per pixel column
+COL_BYTES = ROWS // 8         # 42 bytes per pixel column
 UM_PER_COL = 25400 / DPI      # 42.333 um
 
 # host -> device
@@ -45,7 +47,7 @@ PARK = 0x31
 SPIT = 0x32
 MOTORS_OFF = 0x33
 MOVE_X = 0x34
-NOZZLE_FIRE = 0x35
+NOZZLE_FIRE = 0x35            # u16 cartridge (0 black, 1 colour, 0xFFFF both), u16 count
 ABORT = 0x3F
 BOOTSEL = 0x7F
 
@@ -59,7 +61,7 @@ LOG = 0x85
 
 # JOB_BEGIN flags
 JOB_ROLL = 0x01
-# JOB_BEGIN payload: u8 flags, u8 planes (0 = 1), u8 ink set id, u8 pad
+# JOB_BEGIN payload: u8 flags, u8 planes (0 = 1), u8 ink set id (0 K, 1 CMY, 2 KCMY), u8 pad
 # SWATH_BEGIN flags
 SWATH_PACKBITS = 0x01
 # with planes > 1, SWATH_BEGIN is followed by u32 plane_len[planes]; data = planes back to back
@@ -83,7 +85,8 @@ ERRORS = {
     12: "paper jam", 13: "printhead too hot", 14: "no head voltage", 15: "aborted",
     16: "flash write failed", 17: "queue full", 18: "paper cannot move backwards",
     19: "no job active", 20: "unknown parameter", 21: "column rate too high for speed",
-    22: "the job's ink set doesn't match the cartridges fitted (param n_heads)",
+    22: "the job's ink set doesn't match the cartridges fitted (param cartridges)",
+    23: "content goes past the printable bottom of the sheet",
 }
 
 INFO_S = struct.Struct("<HH16sIHHHH")          # 32 bytes
@@ -187,9 +190,9 @@ def decode_info(p: bytes) -> dict:
                 ring_bytes=ring, dpi=dpi, rows=rows, max_cols=max_cols, max_payload=max_payload)
 
 
-def encode_info(model="FJ-1", fw=(0, 1), ring=262144, max_cols=5184) -> bytes:
+def encode_info(model="FJ-2", fw=(2, 0), ring=262144, max_cols=5184) -> bytes:
     return INFO_S.pack(PROTO_VERSION, (fw[0] << 8) | fw[1], model.encode()[:16], ring,
-                       DPI, ROWS, max_cols, MAX_PAYLOAD)
+                       DPI, ROWS_K, max_cols, MAX_PAYLOAD)
 
 
 def decode_status(p: bytes) -> dict:

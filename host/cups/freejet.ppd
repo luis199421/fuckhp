@@ -5,11 +5,11 @@
 *LanguageEncoding: ISOLatin1
 *PCFileName: "FREEJET.PPD"
 *Manufacturer: "FreeJet"
-*Product: "(FreeJet FJ-1)"
-*ModelName: "FreeJet FJ-1"
-*ShortNickName: "FreeJet FJ-1"
-*NickName: "FreeJet FJ-1 (HP45 inkjet, USB)"
-*1284DeviceID: "MFG:FreeJet;MDL:FJ-1;CMD:FJRASTER;CLS:PRINTER;"
+*Product: "(FreeJet FJ-2)"
+*ModelName: "FreeJet FJ-2"
+*ShortNickName: "FreeJet FJ-2"
+*NickName: "FreeJet FJ-2 (HP 63/302 inkjet, USB)"
+*1284DeviceID: "MFG:FreeJet;MDL:FJ-2;CMD:FJRASTER;CLS:PRINTER;"
 *PSVersion: "(3010.000) 0"
 *LanguageLevel: "3"
 *ColorDevice: True
@@ -46,10 +46,10 @@
 *CloseUI: *PageRegion
 
 *DefaultImageableArea: Letter
-*ImageableArea Letter/US Letter: "8.5 8.5 603.5 783.5"
-*ImageableArea A4/A4: "8.5 8.5 586.5 833.5"
-*ImageableArea Legal/US Legal: "8.5 8.5 603.5 999.5"
-*ImageableArea A5/A5: "8.5 8.5 411.5 586.5"
+*ImageableArea Letter/US Letter: "8.5 62.5 603.5 783.5"
+*ImageableArea A4/A4: "8.5 62.5 586.5 833.5"
+*ImageableArea Legal/US Legal: "8.5 62.5 603.5 999.5"
+*ImageableArea A5/A5: "8.5 62.5 411.5 586.5"
 *ImageableArea Roll300/Roll 216 x 300 mm: "8.5 8.5 603.5 841.5"
 *ImageableArea Roll6/Roll 216 x 150 mm (label): "8.5 8.5 603.5 416.5"
 
@@ -74,13 +74,12 @@
 *ColorModel RGB/Color: "<</cupsColorOrder 0/cupsColorSpace 19/cupsBitsPerColor 8>>setpagedevice"
 *CloseUI: *ColorModel
 
-*OpenUI *FJInkSet/Cartridges fitted: PickOne
+*OpenUI *FJInkSet/Cartridges: PickOne
 *OrderDependency: 30 AnySetup *FJInkSet
 *DefaultFJInkSet: K
-*FJInkSet K/1 cartridge - Black: ""
-*FJInkSet KLK/2 cartridges - Black + Light black (grayscale): ""
-*FJInkSet CMY/3 cartridges - Cyan, Magenta, Yellow: ""
-*FJInkSet CMYK/4 cartridges - Black, Cyan, Magenta, Yellow: ""
+*FJInkSet K/Black cartridge: ""
+*FJInkSet CMY/Colour cartridge only: ""
+*FJInkSet KCMY/Black + colour cartridges: ""
 *CloseUI: *FJInkSet
 
 *OpenUI *FJGamma/Tone (darkness): PickOne

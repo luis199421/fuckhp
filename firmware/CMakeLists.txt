@@ -24,18 +24,18 @@ add_executable(freejet
   src/ring.c
   src/packbits.c
   src/compose.c
-  src/hp45_map.c
+  src/hp302.c
 )
-pico_generate_pio_header(freejet ${CMAKE_CURRENT_LIST_DIR}/src/fire.pio)
+pico_generate_pio_header(freejet ${CMAKE_CURRENT_LIST_DIR}/src/wave.pio)
 target_include_directories(freejet PRIVATE src)
 target_compile_options(freejet PRIVATE -Wall -Wextra -Wno-unused-parameter)
 target_link_libraries(freejet
   pico_stdlib pico_multicore pico_unique_id pico_flash
-  hardware_pio hardware_pwm hardware_adc hardware_flash hardware_watchdog
+  hardware_pio hardware_dma hardware_pwm hardware_adc hardware_flash hardware_watchdog
   tinyusb_device tinyusb_board)
 
 # run entirely from RAM: no flash-cache jitter in the timing-critical code
 pico_set_binary_type(freejet copy_to_ram)
-pico_enable_stdio_uart(freejet 0)   # GP0/GP1 select the TSR multiplexer
+pico_enable_stdio_uart(freejet 0)   # GP0/GP1 are stepper pins
 pico_enable_stdio_usb(freejet 0)
 pico_add_extra_outputs(freejet)

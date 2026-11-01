@@ -37,7 +37,7 @@ def _frames(a, pages, info=None):
         kw = dict(max_cols=info["max_cols"], ring_bytes=info["ring_bytes"])
     return job_frames(pages, bidirectional=not a.unidirectional, roll=a.paper == "roll",
                       cut_pause=a.paper == "roll" and not a.no_cut_pause,
-                      inkset=getattr(a, "inks", "K"), **kw)
+                      inkset=getattr(a, "inks", "K"), warn=lambda m: print("warning:", m), **kw)
 
 
 def _progress(e):
@@ -71,7 +71,7 @@ def _preview(a, pages, out):
     from .color import INKSETS
     from .emulator import VirtualPrinter
     vp = VirtualPrinter()
-    vp.n_heads = len(INKSETS[getattr(a, "inks", "K")])
+    vp.inkset = getattr(a, "inks", "K")
     for fr in _frames(a, pages):
         vp.write(fr)
     if vp.errors:
@@ -83,7 +83,7 @@ def _preview(a, pages, out):
 
 
 # approximate on-paper colour of each ink (RGB 0..1), used to simulate prints
-INK_RGB = {"K": (0.08, 0.08, 0.1), "LK": (0.62, 0.62, 0.64), "C": (0.0, 0.62, 0.87),
+INK_RGB = {"K": (0.08, 0.08, 0.1), "C": (0.0, 0.62, 0.87),
            "M": (0.85, 0.05, 0.5), "Y": (1.0, 0.92, 0.0)}
 
 
@@ -151,8 +151,8 @@ def cmd_maint(a):
         elif a.cmd == "motors-off":
             pr.simple(P.MOTORS_OFF)
         elif a.cmd == "fire":
-            pr.simple(P.NOZZLE_FIRE, struct.pack("<HH", a.nozzle if a.nozzle >= 0 else 0xFFFF,
-                                                  a.count), timeout=30)
+            cart = {"black": 0, "colour": 1, "both": 0xFFFF}[a.cartridge]
+            pr.simple(P.NOZZLE_FIRE, struct.pack("<HH", cart, a.count), timeout=30)
         elif a.cmd == "bootsel":
             pr.send(P.BOOTSEL)
             print("Printer rebooted into USB boot mode: copy freejet.uf2 to the RPI-RP2 drive.")
@@ -164,38 +164,42 @@ def cmd_maint(a):
 def cmd_test(a):
     from . import testpages as T
     from .color import INKSETS
-    n = len(INKSETS[a.inks])
-    if a.which == "nozzles":     # one nozzle-check band per cartridge
-        one = T.nozzle_check()
-        page = np.zeros((n, n * (one.shape[0] + 60), one.shape[1]), bool)
-        for s in range(n):
-            page[s, s * (one.shape[0] + 60):s * (one.shape[0] + 60) + one.shape[0]] = one
-    elif a.which == "heads":
+    inks = INKSETS[a.inks]
+    n = len(inks)
+    if a.which == "nozzles":     # one nozzle-check band per ink
+        bands = [T.nozzle_check(rows=P.ROWS_K if ink == "K" else P.ROWS_COLOR,
+                                step=1 if ink == "K" else 2) for ink in inks]
+        h = max(b.shape[0] for b in bands) + 60
+        page = np.zeros((n, n * h, bands[0].shape[1]), bool)
+        for s, b in enumerate(bands):
+            page[s, s * h:s * h + b.shape[0]] = b
+    elif a.which == "colors":
         if n < 2:
-            sys.exit("head alignment needs --inks KLK, CMY or CMYK")
-        page = T.heads_page(n)
+            sys.exit("colour alignment needs --inks CMY or KCMY")
+        page = T.colors_page(n)
     else:
         if a.which == "rows":
-            down = 1
+            if "K" not in inks:
+                sys.exit("the rows test is for the black cartridge (--inks K or KCMY)")
+            flip = 0
             if not a.dry_run:
                 with _open(a) as pr:
-                    down = pr.get_param(BY_NAME["nozzle0_downstream"].id)
-            rows = np.arange(P.ROWS)
-            nozzle = rows if down else (P.ROWS - 1 - rows)
-            mono = T.alignment_page(nozzle % 2 == 1)
+                    flip = pr.get_param(BY_NAME["nozzle_flip"].id)
+            rows = np.arange(P.ROWS_K)
+            mono = T.alignment_page((rows % 2 == 1) ^ bool(flip))
         elif a.which == "bidir":
             mono, _ = T.bidir_page()
         else:
             mono = T.feed_page()
         page = np.zeros((n,) + mono.shape, bool)
-        page[0] = mono                   # row / bidir / feed tests use slot 0 only
+        page[0] = mono                   # row / bidir / feed tests use the first ink only
     a.files, a.copies = [], 1
     a.paper = "letter" if a.paper == "roll" else a.paper
     w = round(215.9 / 25.4 * 600) if a.paper == "letter" else round(210 / 25.4 * 600)
     m = 120
     full = np.zeros((n, page.shape[1] + 2 * m, w), bool)
     full[:, m:m + page.shape[1], m:m + page.shape[2]] = page[:, :, :w - m]
-    if a.which not in ("bidir",):
+    if a.which != "bidir":
         a.unidirectional = True
     out = full[0] if n == 1 else full
     if a.dry_run:
@@ -204,18 +208,16 @@ def cmd_test(a):
         pr.stream(_frames(a, [out], pr.info()), _progress)
 
 
+CARTRIDGE_PITCH = 28     # mm between the black and the colour cartridge (cad/fj.scad)
+
+
 def standard_geometry(inks: str) -> dict:
-    """Parameter values for the standard FreeJet frame with this many cartridges (must match
-    cad/fj.scad: 28 mm cartridge pitch, frame 2 x span wider, paper guide span further right)."""
-    from .color import INKSETS
-    n = len(INKSETS[inks])
-    span = (n - 1) * 28
-    p = {"n_heads": n, "col0_x_um": (40 + span) * 1000, "spit_x_um": (32 + span) * 1000,
-         "x_travel_um": (300 + span) * 1000}
-    for i in range(1, 4):
-        p[f"head{i}_x_um"] = 28000 * i
-        p[f"head{i}_dy_rows"] = 0
-    return p
+    """Parameter values for the standard FreeJet frame with these cartridges (must match
+    cad/fj.scad: frame 2 x span wider when both cartridges are fitted)."""
+    span = CARTRIDGE_PITCH if inks == "KCMY" else 0
+    return {"cartridges": {"K": 1, "CMY": 2, "KCMY": 3}[inks],
+            "col0_x_um": (40 + span) * 1000, "spit_x_um": (32 + span) * 1000,
+            "x_travel_um": (300 + span) * 1000}
 
 
 def cmd_setup(a):
@@ -226,21 +228,16 @@ def cmd_setup(a):
         pr.simple(P.PARAM_SAVE)
     print(f"configured for ink set {a.inks}: " + ", ".join(f"{k}={v}" for k, v in vals.items()))
     print("now run: freejet test nozzles --inks " + a.inks +
-          ("" if a.inks == "K" else f"  and  freejet test heads --inks {a.inks}"))
+          ("" if a.inks == "K" else f"  and  freejet test colors --inks {a.inks}"))
 
 
 def cmd_calibrate(a):
     um = P.UM_PER_COL
-    if a.what in ("head-x", "head-y"):
-        if len(a.args) != 2:
-            sys.exit("usage: freejet calibrate head-x|head-y SLOT K")
-        a.slot, a.value = int(a.args[0]), a.args[1]
-    else:
-        a.slot, a.value = None, a.args[0]
+    a.value = a.args[0]
     with _open(a) as pr:
         if a.what == "rows":
-            # the test shifted the odd column's data by k: the real gap is k columns smaller
-            pid = BY_NAME["row_gap_um"].id
+            # the test shifted nozzle row 1's data by k: the real gap is k columns smaller
+            pid = BY_NAME["k_row_gap_um"].id
             old = pr.get_param(pid)
             new = round(old - a.value * um)
         elif a.what == "bidir":
@@ -248,17 +245,14 @@ def cmd_calibrate(a):
             pid = BY_NAME["bidir_offset_um"].id
             old = pr.get_param(pid)
             new = round(old + a.value * um)
-        elif a.what in ("head-x", "head-y"):
-            if not a.slot or not 1 <= a.slot <= 3:
-                sys.exit("give the slot (1-3), e.g.  freejet calibrate head-x 2 -1")
-            if a.what == "head-x":   # slot s data was shifted k columns: it really sits -k further
-                pid = BY_NAME[f"head{a.slot}_x_um"].id
-                old = pr.get_param(pid)
-                new = round(old - a.value * um)
-            else:                    # shifted k rows: move its data k rows with spare nozzles
-                pid = BY_NAME[f"head{a.slot}_dy_rows"].id
-                old = pr.get_param(pid)
-                new = round(old + a.value)
+        elif a.what in ("color-x", "cmy-pitch"):   # plane data was shifted k columns
+            pid = BY_NAME["color_x_um" if a.what == "color-x" else "cmy_pitch_um"].id
+            old = pr.get_param(pid)
+            new = round(old - a.value * um)
+        elif a.what == "k-dy":                        # black dash shifted k rows
+            pid = BY_NAME["k_dy_rows"].id
+            old = pr.get_param(pid)
+            new = round(old - a.value)
         else:  # feed: value = measured mm over the 250 mm test
             pid = BY_NAME["y_steps_per_m"].id
             old = pr.get_param(pid)
@@ -280,9 +274,9 @@ def build_parser():
         p.add_argument("--margin", type=float, default=3.0, help="margins in mm")
         p.add_argument("--actual-size", action="store_true", help="don't scale to fit")
         p.add_argument("--dither", default="auto", choices=["auto", "fs", "threshold", "ordered"])
-        p.add_argument("--inks", default="K", choices=["K", "KLK", "CMY", "CMYK"],
-                       help="cartridges fitted, left to right: K = black only, KLK = black + light "
-                            "black (grayscale), CMY / CMYK = colour (must match param n_heads)")
+        p.add_argument("--inks", default="K", choices=["K", "CMY", "KCMY"],
+                       help="cartridges to print with: K = black, CMY = colour cartridge, "
+                            "KCMY = both (must match param cartridges)")
         p.add_argument("--gamma", type=float, default=1.0,
                        help="tone curve: >1 lightens mid-tones if photos print too dark")
         p.add_argument("--unidirectional", action="store_true",
@@ -313,19 +307,18 @@ def build_parser():
     p.set_defaults(func=cmd_param)
 
     p = sub.add_parser("test", help="print a calibration page")
-    p.add_argument("which", choices=["nozzles", "rows", "bidir", "feed", "heads"])
+    p.add_argument("which", choices=["nozzles", "rows", "bidir", "feed", "colors"])
     page_opts(p)
     p.add_argument("--dry-run", metavar="OUT.png")
     p.set_defaults(func=cmd_test)
 
     p = sub.add_parser("setup", help="set cartridge count + frame geometry for a standard build")
-    p.add_argument("--inks", required=True, choices=["K", "KLK", "CMY", "CMYK"])
+    p.add_argument("--inks", required=True, choices=["K", "CMY", "KCMY"])
     p.set_defaults(func=cmd_setup)
 
     p = sub.add_parser("calibrate", help="apply a calibration result and save it")
-    p.add_argument("what", choices=["rows", "bidir", "feed", "head-x", "head-y"])
-    p.add_argument("args", nargs="+", type=float,
-                   help="block number from the test page, or measured mm; head-x/head-y: SLOT K")
+    p.add_argument("what", choices=["rows", "bidir", "feed", "color-x", "cmy-pitch", "k-dy"])
+    p.add_argument("args", nargs=1, type=float, help="block number from the test page, or measured mm")
     p.set_defaults(func=cmd_calibrate)
 
     for name, hlp in [("home", "home the carriage"), ("park", "park + cap the cartridge"),
@@ -338,8 +331,8 @@ def build_parser():
     p = sub.add_parser("feed", help="feed paper forward")
     p.add_argument("mm", type=float)
     p.set_defaults(func=cmd_maint, cmd="feed")
-    p = sub.add_parser("fire", help="fire one nozzle (or all with -1) in place, for debugging")
-    p.add_argument("nozzle", type=int)
+    p = sub.add_parser("fire", help="fire every nozzle of a cartridge over the spittoon (debugging)")
+    p.add_argument("cartridge", choices=["black", "colour", "both"])
     p.add_argument("--count", type=int, default=100)
     p.set_defaults(func=cmd_maint, cmd="fire")
     return ap

@@ -25,7 +25,7 @@ class VirtualPrinter:
         self._out = bytearray()
         self._job = False
         self._roll = False
-        self.n_heads = 1          # like the firmware's n_heads parameter
+        self.inkset = "K"         # like the firmware's `cartridges` parameter
         self._planes = 1
         self._page = None
         self._paper_y_um = 0
@@ -90,8 +90,10 @@ class VirtualPrinter:
                 self.params = {q.id: q.default for q in PARAMS}
             self._ack(fr)
         elif t == P.JOB_BEGIN:
+            from .color import INKSETS, INKSET_IDS
             planes = max(1, p[1]) if len(p) > 1 else 1
-            if planes != self.n_heads:
+            inkset = p[2] if len(p) > 2 else 0
+            if inkset != INKSET_IDS[self.inkset] or planes != len(INKSETS[self.inkset]):
                 return self._ack(fr, 22)
             self._job, self._roll, self._planes = True, bool(p[0] & P.JOB_ROLL), planes
             self._ack(fr)

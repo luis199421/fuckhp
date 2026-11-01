@@ -59,10 +59,10 @@ def test_colour_pdf_through_cups(tmp_path, monkeypatch):
     class Out:
         buffer = out
     monkeypatch.setattr(sys, "stdout", Out)
-    assert filter_main(["rastertofreejet", "1", "u", "t", "1", "FJInkSet=CMYK FJDither=FS",
+    assert filter_main(["rastertofreejet", "1", "u", "t", "1", "FJInkSet=KCMY FJDither=FS",
                         str(tmp_path / "c.ras")]) == 0
     vp = VirtualPrinter()
-    vp.n_heads = 4
+    vp.inkset = "KCMY"
     vp.write(out.getvalue())
     assert not vp.errors
     k, c, m, y = vp.pages[0]

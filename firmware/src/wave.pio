@@ -1,0 +1,24 @@
+; FreeJet cartridge waveform player (HP 63/302 family).
+; Plays 16-bit samples (low 14 bits -> 14 cartridge lines) at 3.333 MHz, fed by DMA.
+; When the DMA buffer runs out the state machine stalls holding the last sample (always an
+; all-zero idle sample), so every line rests low between columns.
+.program fj_wave
+.wrap_target
+    out pins, 14
+    out null, 2
+.wrap
+
+% c-sdk {
+static inline void fj_wave_program_init(PIO pio, uint sm, uint offset, uint pin0, float clkdiv) {
+    pio_sm_config c = fj_wave_program_get_default_config(offset);
+    sm_config_set_out_pins(&c, pin0, 14);
+    sm_config_set_out_shift(&c, true, true, 32);    // LSB first, autopull: 2 samples per word
+    sm_config_set_fifo_join(&c, PIO_FIFO_JOIN_TX);
+    sm_config_set_clkdiv(&c, clkdiv);
+    for (uint i = 0; i < 14; i++) pio_gpio_init(pio, pin0 + i);
+    pio_sm_set_pins_with_mask(pio, sm, 0, 0x3FFFu << pin0);
+    pio_sm_set_pindirs_with_mask(pio, sm, 0x3FFFu << pin0, 0x3FFFu << pin0);
+    pio_sm_init(pio, sm, offset, &c);
+    pio_sm_set_enabled(pio, sm, true);
+}
+%}

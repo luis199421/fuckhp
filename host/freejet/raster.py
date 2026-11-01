@@ -27,7 +27,7 @@ class PageSetup:
     margin_mm: float = 3.0
     fit: bool = True               # scale to the printable area (keeps aspect)
     dither: str = "auto"           # auto | fs | threshold | ordered
-    inkset: str = "K"              # K | KLK | CMY | CMYK  (see color.py)
+    inkset: str = "K"              # K | CMY | KCMY  (see color.py)
     gamma: float = 1.0             # >1 lightens mid-tones (compensates ink spread)
 
     @property
@@ -69,7 +69,7 @@ def place(img: Image.Image, setup: PageSetup, src_dpi: float | None = None) -> n
     m = round(setup.margin_mm * MM)
     aw = pw - 2 * m
     ah = None if ph is None else ph - 2 * m
-    mono = setup.inkset in ("K", "KLK")
+    mono = setup.inkset == "K"
     img = img.convert("L" if mono else "RGB")
     if setup.fit:
         s = aw / img.width
@@ -130,7 +130,7 @@ def _pdf_pages(path, setup, pages):
             m = 2 * setup.margin_mm * MM
             scale = min(scale, (pw - m) / w_pt) if ph is None else \
                 min(scale, (pw - m) / w_pt, (ph - m) / h_pt)
-        img = page.render(scale=scale, grayscale=setup.inkset in ("K", "KLK")).to_pil()
+        img = page.render(scale=scale, grayscale=setup.inkset == "K").to_pil()
         fit_setup = PageSetup(**{**setup.__dict__, "fit": False})
         yield place(img, fit_setup, DPI)
 

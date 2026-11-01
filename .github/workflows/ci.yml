@@ -10,7 +10,6 @@ jobs:
         with: { python-version: "3.12" }
       - run: sudo apt-get update && sudo apt-get install -y cups cups-filters ghostscript
       - run: pip install -e "./host[pdf,test]"
-      - run: python3 tools/hp45_tables.py
       - run: python3 -m pytest -q host/tests
 
   firmware:

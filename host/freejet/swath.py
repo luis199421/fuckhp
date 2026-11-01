@@ -5,15 +5,16 @@ Page bitmap convention: numpy bool array, shape (rows, cols) at 600 dpi, or
 True = put ink there, pixel (0, 0) = top-left corner of the paper as it comes
 out of the printer (the leading edge is the top).
 
-With several planes each pass is 288 rows (not 300) and every plane is
-compressed separately; the planes travel back to back in one pass.
+With several planes (CMY or KCMY) every plane is compressed separately and
+the planes travel back to back in one pass.
 
-A swath covers 300 consecutive pixel rows. Row 0 of a swath is the row under
-the nozzle closest to the paper exit (the firmware maps rows to physical
-nozzles, so the host never needs the HP45 nozzle table).
+A swath covers 324 consecutive pixel rows with the black cartridge alone, 168
+when the colour cartridge is used. Row 0 of a swath is the row under the nozzle
+closest to the paper exit (the firmware maps rows to physical nozzles, so the
+host never needs the cartridge's nozzle tables).
 
 Swath data = for each pixel column, in the order the carriage meets them,
-300 bits packed LSB-first into 38 bytes (row r -> byte r // 8, bit r % 8);
+336 bits packed LSB-first into 42 bytes (row r -> byte r // 8, bit r % 8);
 the whole thing PackBits-compressed.
 """
 from dataclasses import dataclass
@@ -21,7 +22,7 @@ from dataclasses import dataclass
 import numpy as np
 
 from . import packbits
-from .protocol import COL_BYTES, ROWS, ROWS_MULTI, UM_PER_COL
+from .protocol import COL_BYTES, ROWS, ROWS_COLOR, ROWS_K, UM_PER_COL
 
 
 @dataclass
@@ -50,7 +51,7 @@ def plan_swaths(page: np.ndarray, bidirectional: bool = True, max_cols: int = 51
     planes = page[None] if page.ndim == 2 else page
     planes = planes.astype(bool, copy=False)
     n_pl, h, w = planes.shape
-    rows = ROWS if n_pl == 1 else ROWS_MULTI
+    rows = ROWS_K if n_pl == 1 else ROWS_COLOR
     if w > max_cols:
         if planes[:, :, max_cols:].any():
             raise ValueError(f"page has ink beyond column {max_cols} (printer limit)")

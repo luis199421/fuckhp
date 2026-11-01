@@ -103,7 +103,7 @@ void motion_init(void) {
     motion_configure();
 
     // a PWM slice whose pins are not routed to PWM serves as a precise tick source
-    tick_slice = pwm_gpio_to_slice_num(PIN_A_SRCLK);
+    tick_slice = pwm_gpio_to_slice_num(PIN_TICK_SLICE);
     pwm_config c = pwm_get_default_config();
     pwm_config_set_wrap(&c, clock_get_hz(clk_sys) / MOTION_TICK_HZ - 1);
     pwm_init(tick_slice, &c, false);
