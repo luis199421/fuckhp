@@ -1,0 +1,22 @@
+[build-system]
+requires = ["setuptools>=64"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "freejet"
+version = "0.1.0"
+description = "Host driver for the FreeJet FJ-1 open-source DIY inkjet printer"
+readme = "README.md"
+requires-python = ">=3.10"
+license = {text = "GPL-3.0-or-later"}
+dependencies = ["numpy>=1.24", "Pillow>=10.1", "pyserial>=3.5"]
+
+[project.optional-dependencies]
+pdf = ["pypdfium2>=4.20"]
+test = ["pytest>=7"]
+
+[project.scripts]
+freejet = "freejet.cli:main"
+
+[tool.setuptools]
+packages = ["freejet"]
