@@ -172,10 +172,12 @@ def cmd_calibrate(a):
     um = P.UM_PER_COL
     with _open(a) as pr:
         if a.what == "rows":
+            # the test shifted the odd column's data by k: the real gap is k columns smaller
             pid = BY_NAME["row_gap_um"].id
             old = pr.get_param(pid)
-            new = round(old + a.value * um)
+            new = round(old - a.value * um)
         elif a.what == "bidir":
+            # right-to-left half was shifted by k: fire those passes k columns later
             pid = BY_NAME["bidir_offset_um"].id
             old = pr.get_param(pid)
             new = round(old + a.value * um)

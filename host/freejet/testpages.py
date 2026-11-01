@@ -73,27 +73,29 @@ def alignment_page(odd_rows: np.ndarray, span=6, width_mm=200) -> np.ndarray:
 
 
 def bidir_page(span=6, width_mm=200) -> tuple[np.ndarray, int]:
-    """Top half of each line comes from one pass, bottom half from a pass the
-    other way (the planner alternates directions every 300 rows). The bottom
-    half is pre-shifted by k columns; pick the straightest block, then
-    freejet calibrate bidir <k>. Returns (page, row where the 2nd pass starts)."""
-    img, d = _canvas(width_mm, 50)
-    f = _font(round(2.8 * MM))
-    d.text((round(5 * MM), 0), "Bidirectional: pick the block whose lines are straight -> "
-           "freejet calibrate bidir <k>", font=f, fill=0)
+    """The top half of each line is printed left-to-right (the first pass of the
+    job), the bottom half right-to-left (the second pass), pre-shifted by k
+    columns. Pick the block whose lines are straight, then
+    `freejet calibrate bidir <k>`. Labels go *below* the lines so that the lines
+    really are the first two passes. Returns (page, row where pass 2 starts)."""
     block_w = round(width_mm * MM / (2 * span + 1))
+    h = 2 * ROWS + round(16 * MM)
+    page = np.zeros((h, round(width_mm * MM)), dtype=bool)
     for i, k in enumerate(range(-span, span + 1)):
-        d.text((i * block_w + round(2 * MM), round(5 * MM)), f"{k:+d}", font=f, fill=0)
-    page = _ink(img)
-    top = round(12 * MM)
-    # header text occupies its own passes; the lines start on a fresh pass
-    for i, k in enumerate(range(-span, span + 1)):
-        bx = i * block_w + round(2 * MM)
+        bx = i * block_w + round(2 * MM) + span
         for line in range(6):
             x = bx + line * round(1.6 * MM)
-            page[top:top + ROWS, x] = True
-            page[top + ROWS:top + 2 * ROWS, x + k] = True
-    return page, top + ROWS
+            page[0:ROWS, x] = True
+            page[ROWS:2 * ROWS, x + k] = True
+    img, d = _canvas(width_mm, 14)
+    f = _font(round(2.8 * MM))
+    for i, k in enumerate(range(-span, span + 1)):
+        d.text((i * block_w + round(2 * MM), round(1 * MM)), f"{k:+d}", font=f, fill=0)
+    d.text((round(5 * MM), round(7 * MM)), "Bidirectional: pick the block whose lines are straight -> "
+           "freejet calibrate bidir <k>", font=f, fill=0)
+    lab = _ink(img)
+    page[2 * ROWS + 20:2 * ROWS + 20 + lab.shape[0], :lab.shape[1]] |= lab[:h - 2 * ROWS - 20]
+    return page, ROWS
 
 
 def feed_page(length_mm=250.0, width_mm=200) -> np.ndarray:

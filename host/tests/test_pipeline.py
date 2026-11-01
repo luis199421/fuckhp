@@ -124,3 +124,11 @@ def test_load_pdf_image_and_text(tmp_path):
     pdf = next(load_pages(tmp_path / "a.pdf", setup))
     # the black bar is solid black and lands where the PDF put it (scaled to fit)
     assert pdf[round(150 * 6), 400 * 6]
+
+
+def test_bidir_test_page_puts_line_halves_in_opposite_passes():
+    from freejet import testpages as T
+    page, split = T.bidir_page()
+    sw = plan_swaths(page, bidirectional=True)
+    assert sw[0].y_px == 0 and sw[0].direction == 0
+    assert sw[1].y_px == split and sw[1].direction == 1

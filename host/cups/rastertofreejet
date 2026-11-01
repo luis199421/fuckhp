@@ -1,0 +1,3 @@
+#!/bin/sh
+# CUPS filter wrapper: CUPS raster -> FreeJet job stream (see host/freejet/cups_filter.py)
+exec /opt/freejet/venv/bin/python -m freejet.cups_filter "$@"

@@ -31,6 +31,15 @@ class PageHeader:
     page_size_pt: tuple
     media_type: str
     cups_integer: tuple
+    imaging_bbox: tuple        # [left, bottom, right, top] in points, all 0 = full page
+
+    def page_offset_px(self) -> tuple[int, int]:
+        """(x, y) of raster pixel (0, 0) on the physical page, top-left origin."""
+        left, _, _, top = self.imaging_bbox
+        if not any(self.imaging_bbox):
+            return 0, 0
+        return (round(left * self.hw_res[0] / 72),
+                round((self.page_size_pt[1] - top) * self.hw_res[1] / 72))
 
 
 def _parse_header(raw: bytes, endian: str) -> PageHeader:
@@ -44,6 +53,9 @@ def _parse_header(raw: bytes, endian: str) -> PageHeader:
         page_size_pt=(u(352), u(356)),
         media_type=raw[128:192].split(b"\0")[0].decode(errors="replace"),
         cups_integer=struct.unpack_from(endian + "16I", raw, 452),
+        imaging_bbox=(struct.unpack_from(endian + "4f", raw, 436)          # cupsImagingBBox (v2+)
+                      if any(struct.unpack_from(endian + "4f", raw, 436))
+                      else struct.unpack_from(endian + "4I", raw, 284)),  # ImagingBoundingBox
     )
 
 

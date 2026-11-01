@@ -1,0 +1,3 @@
+#!/bin/sh
+# CUPS backend wrapper for freejet:// URIs (see host/freejet/cups_backend.py)
+exec /opt/freejet/venv/bin/python -m freejet.cups_backend "$@"
