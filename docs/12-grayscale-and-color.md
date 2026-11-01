@@ -2,6 +2,10 @@
 
 ![FreeJet with four cartridges (KCMY)](img/assembly_color.png)
 
+![Simulated prints: CMYK (top) and black + light black (bottom)](img/sim_cmyk_and_grayscale.png)
+
+*Simulated prints from `freejet preview --inks CMYK` / `--inks KLK`: the real driver output, drawn with approximate ink colours.*
+
 ## The idea
 
 An HP45 is just a thermal printhead with an ink tank on top. It doesn't
