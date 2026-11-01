@@ -2,47 +2,44 @@
 
 All parts are parametric OpenSCAD files in [`cad/parts`](../cad/parts) that
 share the dimensions in [`cad/fj.scad`](../cad/fj.scad). Ready-made STLs
-are in [`cad/stl`](../cad/stl); regenerate them with `make -C cad -j8`
-after changing anything. For a grayscale or colour printer build with the
-cartridge count, e.g. `make -C cad -j8 N_HEADS=4` → `cad/stl-4heads/`
-(wider frame, 4-pocket carriage, 4 platen segments, 3 tray pieces; see
-[`12-grayscale-and-color.md`](12-grayscale-and-color.md)).
+are in [`cad/stl`](../cad/stl) (black cartridge, or colour cartridge only) and
+[`cad/stl-kcmy`](../cad/stl-kcmy) (black + colour cartridges: wider frame,
+2-pocket carriage). Regenerate them with `make -C cad -j8` or
+`make -C cad -j8 CARTS=KCMY` after changing anything.
 
-**Before printing the carriage**, measure your HP45 with calipers and set
-`cart_w`, `cart_d`, `cart_h`, `nz_back` (nozzle line to the contact face) and
-`pad_z0` in `cad/fj.scad`. The defaults are estimates. Print the carriage
-once in draft quality and test-fit the cartridge before printing it properly.
+**Before printing the carriage**, measure your cartridge with calipers and set
+`cart_w`, `cart_d`, `cart_h` and `nz_back` (nozzle line to the contact face) in
+`cad/fj.scad`. The defaults are estimates. Print the carriage once in draft
+quality and test-fit the cartridge and the salvaged contact flex first.
 
-Material: **PETG** for everything (PLA creeps near warm motors and under
-spring load), **TPU** for the twelve tires, the cap and the wiper. Bed size needed: 220 × 220 mm.
+Material: **PETG** for everything, **TPU** for the four tires, the cap and the
+wiper. Bed size needed: 220 × 220 mm.
 
 | STL | Qty | Settings | Notes |
 |---|---|---|---|
-| side_plate_left / side_plate_right | 1 + 1 | 0.2 mm, 4 walls, 40 % gyroid | flat on the bed |
+| side_plate_left / side_plate_right | 1 + 1 | 0.2 mm, 4 walls, 40 % gyroid | flat on the bed; roll keyhole at the top rear |
 | carriage | 1 | 0.16 mm, 4 walls, 40 % | upright as modelled, no supports |
-| carriage_pad | 1 per cartridge | TPU or PETG, 100 % | |
-| platen_1 … platen_N | 1 each (3 for one cartridge) | 0.2 mm, 4 walls, 30 % | **upside down** (ribs on the bed) for a flat paper surface; segment 1 is 158 × 146 mm |
-| roller_hub | 12 | 0.16 mm, 100 % | 4 per drive shaft + 4 on the pinch shaft |
-| roller_tire_TPU | 12 | TPU, 100 % | (2 O-rings 18 × 2 mm per hub work if you have no TPU) |
-| star_wheel | 6 | 0.12 mm, 100 % | 4 used, 2 spare: points must be sharp |
-| gt2_pulley_76t | 2 | 0.12 mm, 100 % | flat face down |
-| x_motor_bracket | 1 | 0.2 mm, 50 % | |
-| x_idler_bracket | 1 | 0.2 mm, 50 % | |
-| service_station_base | 1 | 0.2 mm, 40 % | |
-| service_station_sled | 1 | 0.16 mm, 100 % | |
-| service_cap_TPU | 1 per cartridge | TPU (85A best, 95A ok), 100 % | seals the nozzles when parked |
+| carriage_pad | 1 per cartridge | TPU or PETG, 100 % | between clamp screw and cartridge |
+| platen_1 … platen_N | 1 each (3 for the black build) | 0.2 mm, 4 walls, 30 % | **upside down** (ribs on the bed) |
+| roller_hub | 4 | 0.16 mm, 100 % | on the feed roller shaft |
+| roller_tire_TPU | 4 | TPU, 100 % | (2 O-rings 18 × 2 mm per hub if you have no TPU) |
+| gt2_pulley_60t | 1 | 0.12 mm, 100 % | flat face down |
+| leaf_bar_1 / leaf_bar_2 | 1 + 1 | 0.2 mm, 50 % | the bar that holds the paper-pressure leaves |
+| leaf_clamp | 4 | 0.2 mm, 100 % | |
+| x_motor_bracket / x_idler_bracket | 1 + 1 | 0.2 mm, 50 % | |
+| service_station_base / service_station_sled | 1 + 1 | 0.2 mm 40 % / 0.16 mm 100 % | |
+| service_cap_TPU | 1 per cartridge | TPU (85A best), 100 % | |
 | service_wiper_TPU | 1 | TPU 95A, 100 % | |
-| rod_collar | 12 | 0.2 mm, 100 % | one on each rod end, outside the plates |
+| rod_collar | 6 | 0.2 mm, 100 % | rails and roller shaft, outside the plates |
 | sensor_bracket | 1 | 0.2 mm, 50 % | |
 | electronics_tray | 1 | 0.2 mm, 20 % | |
-| paper_tray_1 … paper_tray_N | 1 each (2 for one cartridge) | 0.2 mm, 20 % | |
-| paper_guide | 1 | 0.2 mm | |
+| paper_tray_1 … paper_tray_N | 1 each (2 for the black build) | 0.2 mm, 20 % | |
+| paper_guide | 1 | 0.2 mm | sliding right-hand guide |
 | tray_bracket | 2 | 0.2 mm, 50 % | mirror one in the slicer |
-| roll_arm | 2 | 0.2 mm, 50 % | optional, mirror one |
-| roll_core | 2 | 0.2 mm, 20 % | optional |
-| roll_spindle | 3 (1 cartridge; OpenSCAD prints the count) | upright, 100 % | optional; pieces pin together with M3 |
+| roll_core | 2 | 0.2 mm, 20 % | optional, roll paper |
+| roll_spindle | 3 (OpenSCAD prints the count) | upright, 100 % | optional; pieces pin together with M3 |
 
-About 0.85 kg of PETG and 40 g of TPU in total, roughly 35 hours of printing.
+About 0.75 kg of PETG and 20 g of TPU, roughly 30 hours of printing.
 
 ## Checking the design
 
@@ -51,6 +48,6 @@ About 0.85 kg of PETG and 40 g of TPU in total, roughly 35 hours of printing.
 * `cad/animation.scad` + `tools/render_animation.py` render the step-by-step
   assembly animation (`docs/img/assembly_animation.gif` / `.mp4`).
 * Each part renders as a single solid (no floating pieces).
-* The carriage's full travel was checked against the plates, platen, rollers,
-  star wheels, sensor and return belt with `cad/check_collisions.scad`
+* The carriage's full travel was checked against the plates, platen, roller,
+  leaf bar and leaves, sensor and return belt with `cad/check_collisions.scad`
   (a CSG intersection that must come out empty). Repeat it after you change dimensions.

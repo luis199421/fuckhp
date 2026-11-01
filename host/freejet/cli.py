@@ -59,7 +59,7 @@ def cmd_print(a):
         info = pr.info()
         st = pr.status()
         if "head" not in st["flags"]:
-            sys.exit("No cartridge detected - check the HP45 is seated and the head cable.")
+            sys.exit("No cartridge detected - check the cartridge is seated against the contact flex.")
         t0 = time.time()
         pr.stream(_frames(a, _pages(a), info), _progress)
         print(f"Printed in {time.time() - t0:.0f} s")
@@ -263,7 +263,7 @@ def cmd_calibrate(a):
 
 
 def build_parser():
-    ap = argparse.ArgumentParser(prog="freejet", description="FreeJet FJ-1 printer tool")
+    ap = argparse.ArgumentParser(prog="freejet", description="FreeJet FJ-2 printer tool")
     ap.add_argument("--port", help="serial port (default: auto-detect)")
     sub = ap.add_subparsers(dest="command", required=True)
 

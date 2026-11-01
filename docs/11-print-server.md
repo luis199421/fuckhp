@@ -6,7 +6,7 @@ Wi-Fi chip, nothing extra to buy. (Openprinter puts a Raspberry Pi Zero W
 already own, which keeps the bill of materials down.)
 
 ```
- phone / laptop ──network (IPP, Bonjour)──► your Linux PC: CUPS + FreeJet driver ──USB──► FJ-1 (Pico 2)
+ phone / laptop ──network (IPP, Bonjour)──► your Linux PC: CUPS + FreeJet driver ──USB──► FJ-2 (Pico 2)
 ```
 
 ## Share from the Linux computer the printer is plugged into

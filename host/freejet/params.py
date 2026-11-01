@@ -21,8 +21,8 @@ PARAMS = [
     # --- motion -------------------------------------------------------------
     Param(1, "x_steps_per_m", 80000, 10000, 400000,
           "carriage steps per metre (GT2 20T pulley, 1/16 step = 80 steps/mm)"),
-    Param(2, "y_steps_per_m", 175900, 10000, 1000000,
-          "paper feed steps per metre (76T/20T belt, 22 mm roller, 1/16 step); calibrate with `freejet test feed`"),
+    Param(2, "y_steps_per_m", 138900, 10000, 1000000,
+          "paper feed steps per metre (60T/20T belt, 22 mm roller, 1/16 step); calibrate with `freejet test feed`"),
     Param(3, "x_speed_mm_s", 80, 5, 150, "carriage cruise speed while printing"),
     Param(4, "x_accel_mm_s2", 1500, 100, 10000, "carriage acceleration"),
     Param(5, "x_travel_speed_mm_s", 120, 5, 250, "carriage speed for non-printing moves"),

@@ -1,5 +1,6 @@
 // Electronics tray: bolts under the platen beam (4x M3x12 + nuts through two webs) and carries the main
-// board (90 x 70 mm perfboard, long side along X: Pico 2 + 2x TMC2209 + buck converter + head power switch).
+// board (90 x 70 mm perfboard, long side along X: Pico 2, 2x TMC2209, the cartridge level shifters
+// and the 5 V / 9 V / 16 V converter modules).
 // USB and the 12 V barrel jack come out at the back. Print as modelled, PETG.
 include <../fj.scad>
 tx0 = etray_x0; tw = 110;     // X position / width (sits between the motors)

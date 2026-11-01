@@ -4,7 +4,7 @@
 // X(id, NAME, default, min, max)
 #define FJ_PARAMS(X) \
     X(  1, X_STEPS_PER_M         ,    80000,    10000,   400000) \
-    X(  2, Y_STEPS_PER_M         ,   175900,    10000,  1000000) \
+    X(  2, Y_STEPS_PER_M         ,   138900,    10000,  1000000) \
     X(  3, X_SPEED_MM_S          ,       80,        5,      150) \
     X(  4, X_ACCEL_MM_S2         ,     1500,      100,    10000) \
     X(  5, X_TRAVEL_SPEED_MM_S   ,      120,        5,      250) \

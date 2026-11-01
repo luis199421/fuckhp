@@ -110,7 +110,7 @@ def feed_page(length_mm=250.0, width_mm=200) -> np.ndarray:
     d.text((round(5 * MM), y1 + round(3 * MM)),
            f"Measure between the two lines (should be {length_mm:.1f} mm), then", font=f, fill=0)
     d.text((round(5 * MM), y1 + round(8 * MM)), "freejet calibrate feed <measured mm>", font=f, fill=0)
-    # stitch test: grey fill; dark/white stripes every 12.7 mm = feed error
+    # stitch test: grey fill; dark/white stripes between passes = feed error
     page = _ink(img)
     sx0, sx1 = round(130 * MM), round(190 * MM)
     yy = np.arange(y1 + round(20 * MM), y2 - round(5 * MM))

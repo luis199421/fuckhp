@@ -1,6 +1,6 @@
-// Roller hub: 12 needed (4 per drive shaft x2, 4 on the pinch shaft).
+// Roller hub: 4 needed, on the single feed roller shaft.
 // Slides on an 8 mm rod, locked with an M3 set screw (or a drop of CA glue).
-// Tire: print roller_tire.scad in TPU 95A, or stretch two 18x2 mm O-rings into the grooves.
+// Tire: print roller_tire.scad in TPU 95A (4), or stretch two 18x2 mm O-rings into the grooves.
 include <../fj.scad>
 hub_w = 14;
 module roller_hub() {

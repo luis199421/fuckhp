@@ -39,7 +39,7 @@ static const uint8_t config[] = {
 
 uint8_t const *tud_descriptor_configuration_cb(uint8_t index) { (void)index; return config; }
 
-static const char *strings[] = {"", "FreeJet project", "FreeJet FJ-1", "", "FreeJet FJ-1 data"};
+static const char *strings[] = {"", "FreeJet project", "FreeJet FJ-2", "", "FreeJet FJ-2 data"};
 
 uint16_t const *tud_descriptor_string_cb(uint8_t index, uint16_t langid) {
     (void)langid;

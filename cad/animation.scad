@@ -6,8 +6,8 @@ use <parts/side_plate.scad>
 use <parts/carriage.scad>
 use <parts/platen.scad>
 use <parts/roller_hub.scad>
-use <parts/star_wheel.scad>
-use <parts/gt2_pulley_76t.scad>
+use <parts/leaf_bar.scad>
+use <parts/gt2_pulley_60t.scad>
 use <parts/service_station.scad>
 use <parts/x_motor_bracket.scad>
 use <parts/x_idler_bracket.scad>
@@ -32,18 +32,16 @@ module at(k, from=[0,0,150], delay=0) {
 
 module rod(y, z, x0=-20, l=rod_len) { color("silver") translate([x0, y, z]) rotate([0,90,0]) cylinder(d=rod_d, h=l); }
 module lm8uu() color("silver") rotate([0,90,0]) cylinder(d=lm8uu_d, h=lm8uu_l, center=true);
-INK_COLORS = N_HEADS == 4 ? ["#202020", "#00a0dc", "#d8007f", "#f5d800"] :
-             N_HEADS == 3 ? ["#00a0dc", "#d8007f", "#f5d800"] : ["#202020", "#9a9a9a"];
-module cartridge() for (i=[0:N_HEADS-1])
-    color(INK_COLORS[i]) translate([slot_x(i) - cart_w/2, -nz_back, head_gap]) cube([cart_w, cart_d, cart_h]);
-module head_board() for (i=[0:N_HEADS-1])
-    color("ForestGreen") translate([slot_x(i) - pcb_w/2, -nz_back - pcb_t, carr_z0]) cube([pcb_w, pcb_t, pcb_h]);
+module cartridge() for (i=[0:N_SLOTS-1])
+    color(slot_ink(i) == "K" ? "#202020" : "#e8e8e8") translate([slot_x(i) - cart_w/2, -nz_back, head_gap]) cube([cart_w, cart_d, cart_h]);
+module contact_flex() for (i=[0:N_SLOTS-1])     // contact flex (salvaged from an HP DeskJet)
+    color("DarkOrange") translate([slot_x(i) - flex_w/2, -nz_back - 3, carr_z0 + 2]) cube([flex_w, 3, flex_h + 30]);
 module belt_loop2d(circles, w=1.4) difference() {   // GT2 belt around pulleys (2D)
     offset(r=w/2) hull() for (c=circles) translate([c[0], c[1]]) circle(r=c[2]);
     offset(r=-w/2) hull() for (c=circles) translate([c[0], c[1]]) circle(r=c[2]);
 }
 
-// ----- the print demo (last step): load a sheet, then 6 passes, feeding 12.7 mm between them
+// ----- the print demo (last step): load a sheet, then 6 passes, feeding 13.7 mm (one black pass) between them
 PRINT = 14;
 NPASS = 6;
 demo = STEP == PRINT ? U : 0;
@@ -57,7 +55,7 @@ sheet_y0 = -370;                       // sheet on the tray (leading edge at the
 sheet_y1 = -272;                       // leading edge just past the nozzles
 paper_y = STEP < PRINT ? sheet_y0 :
           demo < load ? sheet_y0 + (sheet_y1 - sheet_y0) * ease(demo / load) :
-          sheet_y1 + 12.7 * (pass + (pf > 0.87 ? ease((pf - 0.87) / 0.13) : 0));
+          sheet_y1 + 13.7 * (pass + (pf > 0.87 ? ease((pf - 0.87) / 0.13) : 0));
 
 // 0  side plates
 at(0, [-160, 0, 0]) color("SteelBlue") translate([-plate_t, 0, 0]) side_plate(false);
@@ -74,28 +72,27 @@ for (z=[rail_lo_z, rail_hi_z]) at(2, [-430, 0, 0], z == rail_hi_z ? 0.25 : 0) ro
 // 3  platen beam: three segments bolt together and to the plates
 for (s=[0:platen_segs-1]) at(3, [0, 0, 170], s * 0.2) color("Gainsboro") platen(s);
 
-// 4  drive shafts with rollers, then the 76T pulleys
-for (y=[in_y, out_y]) at(4, [440, 0, 0], y == out_y ? 0.25 : 0) {
-    rod(y, shaft_z, -4);
-    for (x=tire_x) color("#151515") translate([x - 7, y, shaft_z]) rotate([0,90,0]) roller_hub();
+// 4  the single feed roller: shaft with TPU tires, 60T printed pulley
+at(4, [440, 0, 0]) {
+    rod(feed_y, shaft_z, -4);
+    for (x=tire_x) color("#151515") translate([x - 7, feed_y, shaft_z]) rotate([0,90,0]) roller_hub();
 }
-for (y=[in_y, out_y]) at(4, [70, 0, 0], 0.6) color("white")
-    translate([inner_w + plate_t + 4, y, shaft_z]) rotate([0,90,0]) gt2_pulley_76t();
+at(4, [70, 0, 0], 0.6) color("white") translate([inner_w + plate_t + 4, feed_y, shaft_z]) rotate([0,90,0]) gt2_pulley_60t();
 
-// 5  feed motor + closed belt
+// 5  feed motor + 200 mm belt loop
 at(5, [0, 0, -120]) color("#333") translate([inner_w - 40, feed_motor_y - 21, feed_motor_z - 21]) cube([40, 42, 42]);
 at(5, [60, 0, 0], 0.5) color("#111")
     translate([inner_w + plate_t + 8, 0, 0]) rotate([90, 0, 90]) linear_extrude(6)
-        belt_loop2d([[in_y, shaft_z, 76 / PI], [out_y, shaft_z, 76 / PI], [feed_motor_y, feed_motor_z, 20 / PI]]);
+        belt_loop2d([[feed_y, shaft_z, pulley_teeth / PI], [feed_motor_y, feed_motor_z, 20 / PI]]);
 
-// 6  pinch shaft (input) and star-wheel shaft (output)
-at(6, [0, 0, 120]) { rod(in_y, pinch_z, -14);
-    for (x=tire_x) color("#151515") translate([x - 7, in_y, pinch_z]) rotate([0,90,0]) roller_hub(); }
-at(6, [0, 0, 120], 0.3) { rod(out_y, star_z, -14);
-    for (x=tire_x) color("#151515") translate([x - 2.5, out_y, star_z]) rotate([0,90,0]) star_wheel(); }
+// 6  leaf-spring bar: four steel leaves press the paper onto the roller
+at(6, [0, -60, 80]) { color("Peru") { leaf_bar_piece(0); leaf_bar_piece(1); }
+    color("LightSteelBlue") for (x=tire_x)
+        hull() { translate([x - leaf_w/2, leaf_bar_y + 6, leaf_bar_z + 1.5]) cube([leaf_w, 1, 0.3]);
+                 translate([x - leaf_w/2, leaf_y1, 0.1]) cube([leaf_w, 1, 0.3]); } }
 
-// 7  printed collars on every rod end
-for (p=[[rail_y, rail_lo_z], [rail_y, rail_hi_z], [in_y, shaft_z], [out_y, shaft_z], [in_y, pinch_z], [out_y, star_z]])
+// 7  printed collars on the rails and the roller shaft
+for (p=[[rail_y, rail_lo_z], [rail_y, rail_hi_z], [feed_y, shaft_z]])
     color("SteelBlue") {
         at(7, [-60, 0, 0]) translate([-plate_t - collar_w, p[0], p[1]]) rotate([0,90,0]) rod_collar();
         at(7, [60, 0, 0]) translate([inner_w + plate_t, p[0], p[1]]) rotate([0,90,0]) rod_collar();
@@ -116,20 +113,20 @@ at(9, [0, 0, 80], 0.5) color("#111") translate([0, 0, belt_z - 3]) linear_extrud
 at(10, [0, 0, -90]) color("DimGray") sensor_bracket();
 at(10, [0, 0, -140], 0.3) color("DarkSlateGray") electronics_tray();
 
-// 11 printhead board, then the HP45 cartridge
-at(11, [0, -60, 0]) translate([carr_x, 0, 0]) head_board();
+// 11 contact flex, then the HP 302 cartridge(s)
+at(11, [0, -60, 0]) translate([carr_x, 0, 0]) contact_flex();
 at(11, [0, 0, 160], 0.35) translate([carr_x, 0, 0]) cartridge();
 
 // 12 rear paper tray
-at(12, [0, -160, 0]) color("Wheat") { paper_tray("tray"); }
+at(12, [0, -160, 0]) color("Wheat") paper_tray("tray");
 
 // 13 (camera move only: "ready")
 
 // 14 a sheet feeds in and the carriage prints back and forth, "text" appears under the head
-if (STEP >= PRINT) color("white") translate([paper_x0, paper_y, 0.3]) cube([215.9, 279.4, 0.2]);
+if (STEP >= PRINT) color("white") translate([paper_x0, paper_y, 1.3]) cube([215.9, 279.4, 0.2]);
 lens = [[180, 150, 170], [120, 175, 90], [175, 160, 140], [60, 170, 150], [175, 110, 160], [150, 175, 80]];
 if (STEP >= PRINT && demo >= load)
     for (i=[0 : pass]) let(done = i < pass ? 1 : min(1, pf * 1.15))
         for (l=[0:2]) let(len = lens[i][l] * done, x0 = paper_x0 + 15,
                           xa = i % 2 == 0 ? x0 : x0 + lens[i][l] * (1 - done))
-            color("#111") translate([xa, paper_y - (sheet_y1 + 12.7 * i) - 4 + l * 3.6, 0.45]) cube([len, 2, 0.1]);
+            color("#111") translate([xa, paper_y - (sheet_y1 + 12.7 * i) - 4 + l * 3.6, 1.55]) cube([len, 2, 0.1]);

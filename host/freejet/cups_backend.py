@@ -1,4 +1,4 @@
-"""CUPS backend:  freejet://FJ-1?serial=XXXX
+"""CUPS backend:  freejet://FJ-2?serial=XXXX
 
 Installed as <cups>/backend/freejet with mode 0700 (runs as root so it can
 open /dev/ttyACM*). With no arguments it lists attached printers; with
@@ -21,9 +21,9 @@ def log(msg):
 
 def discover():
     for dev, sn, desc in find_ports():
-        uri = "freejet://FJ-1" + (f"?serial={urllib.parse.quote(sn)}" if sn else "")
-        print(f'direct {uri} "FreeJet FJ-1" "FreeJet FJ-1 USB ({sn or dev})" '
-              f'"MFG:FreeJet;MDL:FJ-1;CMD:FJRASTER;CLS:PRINTER;" ""', flush=True)
+        uri = "freejet://FJ-2" + (f"?serial={urllib.parse.quote(sn)}" if sn else "")
+        print(f'direct {uri} "FreeJet FJ-2" "FreeJet FJ-2 USB ({sn or dev})" '
+              f'"MFG:FreeJet;MDL:FJ-2;CMD:FJRASTER;CLS:PRINTER;" ""', flush=True)
     return CUPS_BACKEND_OK
 
 

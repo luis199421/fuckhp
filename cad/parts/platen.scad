@@ -11,8 +11,9 @@ joint_y = [-30, 0, 78];               // joint bolts
 module joint_rib(x, toward) {          // cross rib with bolt holes at a joint / end
     difference() {
         union() {
-            translate([x - (toward > 0 ? 0 : 4), platen_y0, web_z0]) cube([4, 38 - platen_y0, -web_z0 - 1.5]);
-            translate([x - (toward > 0 ? 0 : 4), 66, web_z0]) cube([4, platen_y1 - 66, -web_z0 - 1.5]);
+            // split around the feed roller shaft
+            translate([x - (toward > 0 ? 0 : 4), platen_y0, web_z0]) cube([4, feed_y - 13 - platen_y0, -web_z0 - 1.5]);
+            translate([x - (toward > 0 ? 0 : 4), feed_y + 13, web_z0]) cube([4, platen_y1 - feed_y - 13, -web_z0 - 1.5]);
         }
         for (y=joint_y) translate([x, y, -9]) rotate([0,90,0]) cylinder(d=m3, h=20, center=true);
     }
@@ -56,8 +57,8 @@ module platen(seg) {
         }
         // tear-off teeth
         for (x=[xs : 3 : x1]) translate([x, platen_y1, 0.2]) rotate([0,0,45]) cube([2.2, 2.2, 10], center=true);
-        // output drive tires come up through the platen
-        for (x=tire_x) translate([x - 9, out_y - 13, -10]) cube([18, 26, 20]);
+        // the feed roller's tires come up through the platen
+        for (x=tire_x) translate([x - 9, feed_y - 13, -10]) cube([18, 26, 20]);
         // paper sensor lever slot + bracket bolts (segment 0)
         translate([sensor_x - 2, sensor_y - 6, -10]) cube([4, 12, 20]);
         for (x=[sensor_x - 6, sensor_x + 6]) translate([x, web_y[0], -13]) rotate([90,0,0]) cylinder(d=m3, h=20, center=true);

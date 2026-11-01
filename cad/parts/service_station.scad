@@ -42,7 +42,7 @@ module base() {
         // spittoon cup (the firmware brings each cartridge over it in turn; baffles added below)
         translate([spit_x, 0, base_top - 16]) cylinder(d=13, h=24);
         // room for the extra caps on the sled to travel
-        if (N_HEADS > 1) translate([cap_x + 8 - sled_engage - 2, -9.5, pad_top_retracted - 9])
+        if (N_SLOTS > 1) translate([cap_x + 8 - sled_engage - 2, -9.5, pad_top_retracted - 9])
             cube([head_span + sled_engage + 4, 19, 20]);
         // wiring channel
         translate([4, -2, -31]) cube([10, 4, 10]);

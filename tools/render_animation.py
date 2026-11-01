@@ -24,21 +24,21 @@ W, H = (640, 400) if FAST else (960, 600)
 FPS = 15
 
 STEPS = [
-    "Side plates (printed)",
+    "Side plates (printed, roll slots built in)",
     "Carriage with 3 LM8UU bearings in clamped housings",
     "Carriage rails slide through plates and bearings",
     "Printed platen beam bolts between the plates",
-    "Drive shafts with TPU-tired rollers, 76T printed pulleys",
-    "Paper-feed motor and 400 mm GT2 loop",
-    "Pinch shaft (input) and star wheels (output)",
-    "Printed collars lock every rod",
+    "The one feed roller: TPU tires, 60T printed pulley",
+    "Feed motor and 200 mm GT2 loop (3:1)",
+    "Leaf-spring bar presses the paper onto the roller",
+    "Printed collars lock the rods",
     "Service station: cap sled, wiper, spittoon, home switch",
     "Carriage motor, idler and belt",
-    "Paper sensor and electronics tray (Pico 2 + TMC2209s)",
-    "Printhead board, then the HP 45 cartridge",
-    "Rear paper tray",
-    "FreeJet FJ-1, ready",
-    "Printing: sheet feeds in, one 12.7 mm pass at a time",
+    "Paper sensor and electronics tray (Pico 2 board)",
+    "Contact flex, then the HP 302 cartridge",
+    "Paper tray, roll drops into the plate slots",
+    "FreeJet FJ-2, ready",
+    "Printing: sheet feeds in, one 13.7 mm pass at a time",
 ]
 FRAMES_PER_STEP = 6 if FAST else 10
 PRINT_FRAMES = 40 if FAST else 84
@@ -88,7 +88,7 @@ def caption(path, step, i):
     d.rectangle([0, H - H // 9, W, H], fill=(20, 24, 32, 215))
     label = f"{step + 1:>2}/{len(STEPS)}  {STEPS[step]}" if step < len(STEPS) - 1 else STEPS[step]
     d.text((W // 40, H - H // 9 + H // 36), label, font=big, fill=(255, 255, 255))
-    d.text((W // 40, H // 40), "FreeJet FJ-1 · assembly", font=small, fill=(60, 70, 90))
+    d.text((W // 40, H // 40), "FreeJet FJ-2 · assembly", font=small, fill=(60, 70, 90))
     im.save(path)
 
 

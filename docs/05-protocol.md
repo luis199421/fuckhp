@@ -1,7 +1,7 @@
 # 5. USB protocol
 
 The printer enumerates as a USB CDC-ACM device (a "serial port"), VID
-`0x1209` PID `0x0001`, product string `FreeJet FJ-1`, serial number = the
+`0x1209` PID `0x0001`, product string `FreeJet FJ-2`, serial number = the
 Pico's unique ID. Baud rate settings are ignored. Everything is binary
 frames, little-endian. Reference implementations:
 [`host/freejet/protocol.py`](../host/freejet/protocol.py) and
@@ -38,7 +38,7 @@ The printer acknowledges every frame except `SWATH_DATA` with an `ACK`
 |---|---|---|---|
 | 0x01 | HELLO | – | → INFO |
 | 0x02 | GET_STATUS | – | → STATUS |
-| 0x10 | JOB_BEGIN | u8 flags (bit0 = roll), u8 planes (0/1 = one cartridge), u8 ink set (0 K, 1 KLK, 2 CMY, 3 CMYK), u8 pad | homes, checks the cartridges, powers the heads; planes must equal param `n_heads` |
+| 0x10 | JOB_BEGIN | u8 flags (bit0 = roll), u8 planes (1, 3 or 4), u8 ink set (0 K, 1 CMY, 2 KCMY), u8 pad | homes, powers the 16 V rail; the ink set must match param `cartridges` |
 | 0x11 | PAGE_BEGIN | u32 page_length_um (roll), u32 flags | spits, then loads a sheet (waits for the user) |
 | 0x12 | SWATH_BEGIN | i32 y_um, i16 x0, u16 ncols, u8 dir, u8 flags (bit0 PackBits), u16 pad, u32 data_len; with planes > 1 then u32 plane_len[planes] | one pass |
 | 0x13 | SWATH_DATA | bytes | chunks of the pass data until data_len is reached |
@@ -54,7 +54,7 @@ The printer acknowledges every frame except `SWATH_DATA` with an `ACK`
 | 0x32 | SPIT | u16 count | fire all nozzles into the spittoon |
 | 0x33 | MOTORS_OFF | – | |
 | 0x34 | MOVE_X | i32 µm | |
-| 0x35 | NOZZLE_FIRE | u16 nozzle (0xFFFF = all), u16 count | in place, for diagnostics |
+| 0x35 | NOZZLE_FIRE | u16 cartridge (0 black, 1 colour, 0xFFFF both), u16 count | fires every nozzle over the spittoon, for diagnostics |
 | 0x3F | ABORT | – | immediate: stops everything, flushes the queue |
 | 0x7F | BOOTSEL | – | reboot into the RP2350 USB bootloader |
 
@@ -63,23 +63,25 @@ The printer acknowledges every frame except `SWATH_DATA` with an `ACK`
 * `y_um`: paper position (µm from the leading edge) under swath row 0. Must
   never decrease within a page (the paper can't go backwards).
 * Row 0 is the row under the nozzle closest to the paper exit. The
-  firmware maps rows to physical nozzles; hosts never need the HP45 map.
+  firmware maps rows to physical nozzles; hosts never need the cartridge's
+  nozzle tables.
 * `x0`, `ncols`: pixel columns (1/600 in) from the paper's left edge.
 * `dir`: 0 = carriage moves left→right, 1 = right→left.
-* Data = for each column **in the order the carriage meets them**, 38 bytes:
-  row *r* is bit *r % 8* (LSB first) of byte *r / 8*. Then PackBits-compressed
-  if flags bit 0 is set.
-* With several cartridges, each plane (one per cartridge, slot order) is
-  compressed on its own and the planes follow each other; `plane_len` gives
-  their sizes. Passes are then 288 rows tall (rows 288–299 empty): the
-  firmware uses the 12 spare nozzles to line the cartridges up vertically.
+* Data = for each column **in the order the carriage meets them**, 42 bytes
+  (336 bits): row *r* is bit *r % 8* (LSB first) of byte *r / 8*. Then
+  PackBits-compressed if flags bit 0 is set.
+* Passes are 324 rows tall with the black ink set (K), 168 rows when the
+  colour cartridge is used (CMY, KCMY). Colour nozzles are 1/300 in apart, so
+  colour planes only use even rows.
+* With several planes (C, M, Y or K, C, M, Y) each plane is compressed on its
+  own and the planes follow each other; `plane_len` gives their sizes.
 
 ## Printer → host
 
 | Type | Name | Payload |
 |---|---|---|
 | 0x80 | ACK | u8 seq, u8 type, u16 code |
-| 0x81 | INFO | u16 proto, u16 fw, char model[16], u32 ring_bytes, u16 dpi, u16 rows, u16 max_cols, u16 max_payload |
+| 0x81 | INFO | u16 proto (2), u16 fw, char model[16], u32 ring_bytes, u16 dpi, u16 rows (324), u16 max_cols, u16 max_payload |
 | 0x82 | STATUS | u8 state, u8 flags, u16 error, u16 tsr, u16 vhd_mv, u32 ring_free, u8 queue_len, u8 last_event, u16 pages, i32 paper_y_um, i32 x_um |
 | 0x83 | EVENT | u8 code, u8 pad, u16 arg, i32 value |
 | 0x84 | PARAM | u16 id, u16 pad, i32 value |
@@ -92,7 +94,8 @@ Events: 1 paper needed, 2 paper loaded, 3 page done (value = page count),
 4 job done, 5 error (arg = error code), 6 cut now, 7 head hot (pausing),
 8 aborted.
 
-Error codes: see `ERRORS` in `protocol.py` (1 bad CRC … 22 ink set doesn't match the cartridges). After
+Error codes: see `ERRORS` in `protocol.py` (1 bad CRC … 22 ink set doesn't
+match the cartridges, 23 content past the printable bottom of a sheet). After
 an error the printer rejects the rest of that job's frames until the next
 `JOB_BEGIN` or `ABORT`.
 

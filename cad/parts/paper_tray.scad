@@ -6,7 +6,7 @@
 include <../fj.scad>
 PART = "tray";
 PIECE = 0;
-tray_y0 = plate_y0 - 70; tray_y1 = in_y - 14;      // tray in front of the input rollers
+tray_y0 = plate_y0 - 70;                          // tray_y1 (front edge) is in fj.scad
 tray_z = 1.2;                                      // tray surface slightly above the paper line
 tray_pieces = ceil(inner_w / 190);
 function tray_x(i) = inner_w * i / tray_pieces;

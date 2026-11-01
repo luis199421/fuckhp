@@ -23,11 +23,13 @@ freejet print photo.jpg --paper a4 --dither fs
 freejet print notes.txt --pages 1-2 --copies 3
 freejet print label.png --paper roll --length 100
 freejet preview report.pdf -o preview.png   # exactly what would be printed
-freejet print photo.jpg --inks CMYK         # colour / grayscale builds: see 12-grayscale-and-color.md
+freejet print photo.jpg --inks KCMY         # black + colour cartridges: see 12-grayscale-and-color.md
 ```
 
-When a page starts the printer waits for paper: slide a sheet face up into
-the rear slot along the left guide until the rollers take it.
+When a page starts the printer waits for paper: slide a sheet face up along
+the left guide, under the leaf bar, until it stops against the roller. After
+a moment the printer pulls it in. The last ~22 mm of a sheet can't be printed
+(single feed roller); the print dialog's page margins already allow for that.
 
 On Windows the port is detected automatically (it appears as "USB Serial
 Device (COMx)"). On Linux add yourself to the `dialout` group or install the
@@ -42,7 +44,7 @@ sudo host/cups/install.sh --add
 
 This installs the package into `/opt/freejet/venv`, the filter and backend
 into CUPS, the PPD, and adds a queue called **FreeJet** for the connected
-printer (URI `freejet://FJ-1?serial=…`). Then print from any application, or:
+printer (URI `freejet://FJ-2?serial=…`). Then print from any application, or:
 
 ```bash
 lp -d FreeJet document.pdf
@@ -51,7 +53,7 @@ lp -d FreeJet -o FJMediaSource=Roll -o media=Roll6 label.pdf
 ```
 
 Options in the print dialog: paper size, colour mode (grayscale/colour),
-cartridges fitted (black / black + light black / CMY / CMYK), tone
+cartridges (black / colour / black + colour), tone
 (darker…lighter), paper source (sheet/roll), pause-for-cutting (roll),
 bidirectional on/off, halftoning (auto, error diffusion, ordered, black & white).
 

@@ -5,3 +5,4 @@ firmware/build/
 firmware/tests/fw_sim
 *.pbm
 preview*.png
+firmware/tests/wave_test

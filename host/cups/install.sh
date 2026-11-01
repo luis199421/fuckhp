@@ -32,7 +32,7 @@ if command -v systemctl >/dev/null; then systemctl restart cups || true; fi
 if [ "$1" = "--add" ]; then
     URI=$("$CUPS_LIB/backend/freejet" | head -n1 | awk '{print $2}')
     [ -n "$URI" ] || { echo "no printer found on USB - plug it in and re-run with --add"; exit 1; }
-    lpadmin -p FreeJet -E -v "$URI" -m freejet/freejet.ppd -D "FreeJet FJ-1" -L "USB"
+    lpadmin -p FreeJet -E -v "$URI" -m freejet/freejet.ppd -D "FreeJet FJ-2" -L "USB"
     lpoptions -d FreeJet
     echo "added queue FreeJet -> $URI (now the default printer)"
 fi

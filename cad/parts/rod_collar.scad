@@ -1,6 +1,6 @@
-// Printed split collar for the 8 mm rods (print 12, PETG, 100 % infill). M3x16 + nut.
-// Replaces bought shaft collars: rails, drive shafts, pinch shaft and star shaft each get
-// one collar against the outside of each side plate.
+// Printed split collar for the 8 mm rods (print 6, PETG, 100 % infill). M3x16 + nut.
+// Replaces bought shaft collars: both rails and the feed roller shaft get one collar
+// against the outside of each side plate.
 include <../fj.scad>
 module rod_collar() difference() {
     union() {

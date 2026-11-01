@@ -1,4 +1,4 @@
-// TPU tire for roller_hub.scad (print 12, TPU 95A, 100 % infill). Stretch over the hub.
+// TPU tire for roller_hub.scad (print 4, TPU 95A, 100 % infill). Stretch over the hub.
 include <../fj.scad>
 difference() {
     cylinder(d=tire_od, h=12);

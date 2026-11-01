@@ -1,14 +1,14 @@
 # Export every printable part:
-#   make -j8                 1 cartridge (black)             -> stl/
-#   make -j8 N_HEADS=2       black + light black (grayscale) -> stl-2heads/
-#   make -j8 N_HEADS=4       black + cyan + magenta + yellow -> stl-4heads/   (N_HEADS=3: CMY)
+#   make -j8                 black cartridge (HP 63/302)          -> stl/
+#   make -j8 CARTS=KCMY      black + tri-colour cartridges        -> stl-kcmy/
+#   (CARTS=CMY, colour cartridge only, uses the same parts as the default build)
 # Needs OpenSCAD 2021.01 or newer.
 OPENSCAD ?= openscad
 S = parts
-N_HEADS ?= 1
-OUT := $(if $(filter 1,$(N_HEADS)),stl,stl-$(N_HEADS)heads)
+CARTS ?= K
+OUT := $(if $(filter KCMY,$(CARTS)),stl-kcmy,stl)
 # same arithmetic as fj.scad: number of platen segments and tray pieces
-GEOM := $(shell python3 -c "import math;n=$(N_HEADS);s=(n-1)*28;w=360+2*s;e=(70+s+88) if 70+s+88<=160 else 70+s-10;print(1+math.ceil((w-e)/130), math.ceil(w/190))")
+GEOM := $(shell python3 -c "import math;s=28 if '$(CARTS)'=='KCMY' else 0;w=360+2*s;e=(70+s+88) if 70+s+88<=160 else 70+s-10;print(1+math.ceil((w-e)/130), math.ceil(w/190))")
 PLATEN_SEGS := $(word 1,$(GEOM))
 TRAY_PIECES := $(word 2,$(GEOM))
 
@@ -20,8 +20,10 @@ PARTS = \
   $(foreach i,$(shell seq 1 $(PLATEN_SEGS)),platen_$(i):platen.scad:SEG=$(shell echo $$(($(i)-1)))) \
   roller_hub:roller_hub.scad: \
   roller_tire_TPU:roller_tire.scad: \
-  star_wheel:star_wheel.scad: \
-  gt2_pulley_76t:gt2_pulley_76t.scad: \
+  gt2_pulley_60t:gt2_pulley_60t.scad: \
+  leaf_bar_1:leaf_bar.scad:PIECE=0 \
+  leaf_bar_2:leaf_bar.scad:PIECE=1 \
+  leaf_clamp:leaf_bar.scad:PART="clamp" \
   x_motor_bracket:x_motor_bracket.scad: \
   x_idler_bracket:x_idler_bracket.scad: \
   service_station_base:service_station.scad:PART="base" \
@@ -34,7 +36,6 @@ PARTS = \
   service_cap_TPU:service_station.scad:PART="cap" \
   service_wiper_TPU:service_station.scad:PART="wiper" \
   rod_collar:rod_collar.scad: \
-  roll_arm:roll_holder.scad:PART="arm" \
   roll_core:roll_holder.scad:PART="core" \
   roll_spindle:roll_holder.scad:PART="spindle"
 
@@ -48,10 +49,10 @@ all: $(STLS)
 define rule
 $(OUT)/$(call pname,$1).stl: $(S)/$(call pfile,$1) fj.scad
 	@mkdir -p $(OUT)
-	$(OPENSCAD) -D N_HEADS=$(N_HEADS) $(if $(call pdef,$1),-D '$(call pdef,$1)') -o $$@ $$<
+	$(OPENSCAD) -D 'CARTS="$(CARTS)"' $(if $(call pdef,$1),-D '$(call pdef,$1)') -o $$@ $$<
 endef
 $(foreach p,$(PARTS),$(eval $(call rule,$p)))
 
 clean:
-	rm -rf stl stl-*heads
+	rm -rf stl stl-*
 .PHONY: all clean

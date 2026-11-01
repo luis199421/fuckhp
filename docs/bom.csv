@@ -1,43 +1,34 @@
 group,qty,part,spec,approx_usd_total,notes
-mechanical,6,Smooth rod,8 mm x 400 mm (h8 / chromed),15.00,"2 carriage rails, 2 drive shafts, pinch shaft, star shaft (the platen is a printed beam)"
-mechanical,3,Linear bearing,LM8UU,2.00,
-mechanical,4,Ball bearing,608ZZ (8x22x7),2.00,drive shafts
+mechanical,3,Smooth rod,8 mm x 400 mm (500 mm for black + colour),7.50,"2 carriage rails + the feed roller shaft"
+mechanical,3,Linear bearing,LM8UU,2.00,carriage
+mechanical,2,Ball bearing,608ZZ (8x22x7),1.00,feed roller shaft
 mechanical,2,Stepper motor,"NEMA17, 34-40 mm, 1.8 deg, >=0.3 Nm",18.00,carriage and paper feed
 mechanical,2,GT2 pulley,"20T, 5 mm bore, 6 mm belt",3.00,on the two motors
 mechanical,1,GT2 idler,"20T toothed, 5 mm bore",1.50,carriage belt
-mechanical,1,GT2 belt (open),"6 mm, 1 m",3.00,carriage (about 0.9 m used)
-mechanical,1,GT2 belt (closed loop),"6 mm, 400 mm length",2.00,paper feed
-mechanical,1,Screw kit,"M3 socket head: ~30x M3x12, ~25x M3x16, 10x M3x20; ~45 M3 nuts; 10x M3x8 set screws",5.00,every screw in the printer is M3 except the M5 idler bolt and the 4 board screws
+mechanical,1,GT2 belt (open),"6 mm, 1 m",3.00,carriage
+mechanical,1,GT2 belt (closed loop),"6 mm, 200 mm length",1.50,feed: motor 20T -> printed 60T on the roller
+mechanical,1,Spring steel strip,"0.3 mm x 10-12.7 mm feeler-gauge strip, 25 cm",3.00,"cut 4 leaves x 52 mm: they press the paper onto the roller"
+mechanical,1,Screw kit,"M3 socket head x 8/12/16/20, ~40 M3 nuts, 6x M3x8 set screws; M2.5 x 6 self-tapping x4",5.00,
 mechanical,1,M5 bolt,M5 x 30 + nut + 2 washers,0.50,idler axle
-mechanical,4,Screw,M2.5 x 6 self-tapping,0.50,head board
-mechanical,3,Extension spring,"~5 x 25 mm, light",1.00,"2 pull the pinch shaft down, 1 returns the cap sled. Printed springs creep, so these stay steel"
+mechanical,1,Extension spring,"~5 x 25 mm, light",0.30,returns the cap sled
 mechanical,2,Lever microswitch,KW11-3Z with ~28 mm lever,1.50,home + paper sensor
 mechanical,1,Push button,12 mm panel button,0.50,front panel
 mechanical,1,LED,5 mm + 330 ohm,0.20,front panel
-mechanical,1,Filament,PETG ~0.85 kg + TPU 95A ~40 g,16.00,"TPU: tires, cap, wiper, clamp pad"
-electronics,1,Raspberry Pi Pico 2,RP2350,5.00,must be the Pico 2: the RP2040 Pico is too slow for the motion interrupt
+mechanical,1,Filament,PETG ~0.75 kg + TPU ~20 g,14.00,"TPU: tires, cap, wiper, clamp pad"
+electronics,1,Raspberry Pi Pico 2,RP2350,5.00,
 electronics,2,Stepper driver,TMC2209 StepStick (MS1/MS2 high = 1/16),8.00,A4988 also works (louder)
 electronics,2,Capacitor,100 uF 25 V,0.40,one per stepper driver
 electronics,1,Power supply,12 V 5 A brick + 5.5x2.1 mm jack,10.00,
-electronics,1,Buck converter,"MP1584 module, set to 5.0 V",1.00,
-electronics,1,P-MOSFET,IRF9540N (TO-220),0.80,head supply switch
-electronics,1,NPN transistor,2N3904,0.10,
-electronics,1,Polyfuse,3 A hold,0.30,input
-electronics,1,Schottky diode,1N5822,0.20,reverse-polarity crowbar
-electronics,1,Schottky diode,1N5819,0.10,5 V into Pico VSYS
-electronics,1,Resistor/capacitor kit,"1k, 2.2k, 4.7k, 10k, 15k, 47k, 100k, 47R, 330R; 100 nF, 220 nF, 1000 uF 25 V",2.00,
-electronics,1,Perfboard,90 x 70 mm,1.00,main board
-electronics,1,Connectors,"JST-XH 4-pin x2, 2-pin x3; 2x8 box header; pin headers",2.00,
-electronics,1,Ribbon cable,"16-way, 0.5 m + 2 IDC 2x8 sockets",2.00,
-electronics,1,Printhead board PCB,"44 x 46 mm, 2 layers, ENIG finish",4.00,5 pcs ~ $15-20 with ENIG and shipping
-electronics,5,Shift register,74HCT595 SOIC-16,1.50,head board
-electronics,5,Source driver,TBD62783AFWG SOP-18,6.00,head board
-electronics,1,Monostable,74HC123 SOIC-16,0.30,head board pulse limiter
-electronics,1,NAND gate,74HC00 SOIC-14,0.20,head board
-electronics,1,Head board passives,"2x 470 uF 25 V low-ESR, 4x 10 uF X7R, 13x 100 nF, 680 pF C0G, resistors",2.00,
-consumable,1,Ink cartridge,HP 45 / 51645A (OEM ~$25-30 or remanufactured ~$12-15),15.00,refill with a syringe
-colour option,per extra cartridge,Printhead board + parts,"same narrow head board, chips, passives, 16-way ribbon",9.00,"2 for grayscale (KLK), 4 for colour (CMYK)"
-colour option,1,Analog multiplexer,74HC4051 (DIP-16),0.30,routes each cartridge TSR to the ADC
-colour option,1,Longer rods and belt,6x 8 mm rods 500/600 mm instead of 400; GT2 open belt 1.5 m,5.00,extra over the black-only build
-colour option,per extra cartridge,HP45-format cartridge,new HP 45 (flushed) or empty refillable water-based TIJ 2.5 cartridge,12.00,
-colour option,1,Refill ink,"dye ink for HP thermal heads, C/M/Y(/K) 100 ml each; light black for KLK",12.00,not Epson/piezo or pigment inks
+electronics,2,Buck module,"MP1584, set to 5.0 V and 9.0 V",2.00,
+electronics,1,Boost module,"MT3608, set to 16.0 V",1.00,cartridge heater rail
+electronics,1,P-MOSFET + NPN,IRF9540N + 2N3904,0.90,switches the 16 V rail
+electronics,2,Level shifter,CD4504BE (DIP-16),1.50,9 V and 16 V cartridge signals
+electronics,4,Heater switch,"AO3401A on SOT-23 adapter + 2N7000",1.20,F3/F5 of each cartridge
+electronics,2,Monostable,74HCT123 (DIP-16),0.60,heater pulse limiter (max ~3 us)
+electronics,1,AND gate,74HCT08 (DIP-14),0.20,
+electronics,1,Protection,"3 A polyfuse, 1N5822, 1N5819",0.60,
+electronics,1,Passives,"resistors, 470 uF 25 V low-ESR, 10 uF, 100 nF, 680 pF C0G",2.00,
+electronics,1,Board and connectors,"90 x 70 mm perfboard, JST-XH, headers",3.00,
+electronics,1,Contact flex + cable,"salvaged from a dead HP DeskJet 2130/2630/3630/4520 (or bought as a carriage spare part)",0.00,see 03-electronics.md
+consumable,1,Black cartridge,HP 302 / 63 black (or XL),15.00,refillable
+consumable,1,Colour cartridge (optional),HP 302 / 63 tri-colour (or XL),18.00,for colour printing

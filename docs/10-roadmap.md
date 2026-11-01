@@ -4,26 +4,25 @@
 
 | Part | State |
 |---|---|
-| Host driver (CLI, rasteriser, protocol, CUPS filter/backend, emulator) | written and tested in software: 21 tests, including a real CUPS + Ghostscript run |
-| Firmware | written, builds cleanly for the Pico 2; its data path (frames → ring → compose → nozzles) is tested on a PC against the host. Not yet run on hardware. |
-| CAD | 27 parametric parts; every part is a single solid; the carriage's travel passes a collision check. Not yet test-printed; cartridge dimensions are estimates. |
-| Main board | wiring documented (modules on perfboard) |
-| Printhead board | circuit and netlist done, contact footprint generated; **PCB layout still to draw** |
+| Host driver (CLI, rasteriser, colour separation, protocol, CUPS filter/backend, emulator) | written and tested in software: 34 tests, including a real CUPS + Ghostscript colour run |
+| Firmware | written, builds cleanly for the Pico 2. The cartridge waveform is compared sample by sample against Sprite_tm's original driver; the data path (frames → ring → compose → nozzle data) is tested on a PC for K, CMY and KCMY. Not yet run on hardware. |
+| CAD | 28 parametric parts, single solids, carriage travel passes a collision check, for both the black-only and the black + colour build. Not yet test-printed; **cartridge dimensions are estimates**. |
+| Main board | wiring documented (modules + DIP chips on perfboard) |
+| Cartridge contacts | salvaged DeskJet contact flex; **pad-to-signal mapping must be verified** against the MagicBrush write-up |
 
 Nobody has built one yet. The first build is a prototype.
 
 ## Next
 
-1. Lay out the printhead board in KiCad (footprint + netlist are in
-   `hardware/head-board`), order with ENIG.
-2. Build prototype #1, measure the real HP45, fix the carriage dimensions.
-3. Verify pulse width / addresses on a scope, then first prints.
-4. Tune defaults (speeds, feed steps, sensor distances) from the prototype.
-5. Try network sharing (`docs/11-print-server.md`) with iOS,
-   Android and Windows; later maybe a PAPPL-based IPP Everywhere printer
-   application, and printing straight from a USB stick (as Openprinter plans).
-6. Optional sheet feeder (stack of 20–50 sheets).
-7. Optional automatic cutter for roll mode (Openprinter has one integrated).
-8. Grayscale/colour (done in software: 2–4 HP45-format cartridges with different inks, see
-   `12-grayscale-and-color.md`); needs real ink tests, especially home-mixed light black.
-9. Get a dedicated USB PID from pid.codes.
+1. Measure a real HP 302 / 63 (both cartridges) and a salvaged contact flex;
+   fix `cart_w/d/h`, `nz_back` and the flex recess in `cad/fj.scad`.
+2. Build prototype #1. Verify the waveform and heater pulses on a scope
+   (no cartridge), then first nozzle checks.
+3. Measure the real nozzle geometry (`k_row_gap_um`, `color_x_um`,
+   `cmy_pitch_um`, `k_dy_rows`, `nozzle_flip`) and make them the defaults.
+4. Tune speeds, leaf-spring pressure, feed steps and sensor distances.
+5. A small PCB for the main board (optional, the perfboard works).
+6. Try network sharing (`docs/11-print-server.md`) with iOS, Android and
+   Windows; later maybe a PAPPL-based IPP Everywhere printer application.
+7. Optional sheet feeder (stack of 20–50 sheets) and roll cutter.
+8. Get a dedicated USB PID from pid.codes.
