@@ -4,7 +4,7 @@
 // X(id, NAME, default, min, max)
 #define FJ_PARAMS(X) \
     X(  1, X_STEPS_PER_M         ,    80000,    10000,   400000) \
-    X(  2, Y_STEPS_PER_M         ,   138900,    10000,  1000000) \
+    X(  2, Y_STEPS_PER_M         ,   175900,    10000,  1000000) \
     X(  3, X_SPEED_MM_S          ,       80,        5,      150) \
     X(  4, X_ACCEL_MM_S2         ,     1500,      100,    10000) \
     X(  5, X_TRAVEL_SPEED_MM_S   ,      120,        5,      250) \
@@ -15,15 +15,15 @@
     X( 10, X_TRAVEL_UM           ,   300000,    50000,   600000) \
     X( 11, HOME_SPEED_MM_S       ,       25,        2,      100) \
     X( 12, HOME_BACKOFF_UM       ,     3000,        0,    20000) \
-    X( 20, COL0_X_UM             ,    62000,        0,   600000) \
+    X( 20, COL0_X_UM             ,    40000,        0,   600000) \
     X( 21, ROW_GAP_UM            ,     4050,    -8000,     8000) \
     X( 22, BIDIR_OFFSET_UM       ,        0,    -2000,     2000) \
     X( 23, NOZZLE0_DOWNSTREAM    ,        1,        0,        1) \
-    X( 24, SENSOR_TO_NOZZLE_UM   ,    64000,        0,   300000) \
-    X( 25, EJECT_UM              ,   150000,        0,   500000) \
-    X( 26, SPIT_X_UM             ,    30000,        0,   200000) \
+    X( 24, SENSOR_TO_NOZZLE_UM   ,    60000,        0,   300000) \
+    X( 25, EJECT_UM              ,   120000,        0,   500000) \
+    X( 26, SPIT_X_UM             ,    20000,        0,   200000) \
     X( 27, MAX_COLS              ,     5184,      100,     7000) \
-    X( 28, CUTTER_UM             ,    45000,        0,   200000) \
+    X( 28, CUTTER_UM             ,    78000,        0,   200000) \
     X( 40, PULSE_NS              ,     1800,      500,     2400) \
     X( 41, PRIM_GROUPS           ,        3,        1,        4) \
     X( 42, SPIT_COUNT            ,       40,        0,     2000) \
