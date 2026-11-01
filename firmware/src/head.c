@@ -20,7 +20,9 @@ static int groups;
 static uint32_t pulse_cycles;
 
 static fj_pass_t *volatile cur_pass;
-static volatile int spit_nozzle;
+static int heads = 1;
+static uint32_t spread8[256];          // byte -> its 8 bits spread 4 apart (PIO nibble layout)
+static volatile int spit_head, spit_nozzle;
 static volatile uint32_t spit_count, spit_period_us;
 static volatile bool busy, abort_req;
 static volatile int result;
@@ -49,19 +51,25 @@ static void __not_in_flash_func(addr_clear)(void) {
 }
 
 // ---------------------------------------------------------------- firing
-static void __not_in_flash_func(fire_column)(const uint16_t words[HP45_ADDRESSES]) {
+static void __not_in_flash_func(fire_column)(const fj_words_t words) {
     int last = -1;
-    for (int a = 0; a < HP45_ADDRESSES; a++) if (words[a]) last = a;
+    for (int a = 0; a < HP45_ADDRESSES; a++)
+        for (int h = 0; h < heads; h++) if (words[h][a]) last = a;
     if (last < 0) return;
     for (int a = 0; a <= last; a++) {
-        addr_step(a == 0);
-        uint16_t m = words[a];
-        if (!m) continue;
+        addr_step(a == 0);              // the address lines are shared by every cartridge
         int pushed = 0;
         for (int g = 0; g < groups; g++) {
-            uint16_t sub = m & group_mask[g];
-            if (!sub) continue;
-            pio_sm_put_blocking(pio, sm, (uint32_t)sub << 16 | pulse_cycles);
+            uint32_t w0 = 0, w1 = 0;
+            for (int h = 0; h < heads; h++) {
+                uint16_t sub = words[h][a] & group_mask[g];
+                w0 |= spread8[sub >> 8] << h;
+                w1 |= spread8[sub & 0xFF] << h;
+            }
+            if (!(w0 | w1)) continue;
+            pio_sm_put_blocking(pio, sm, w0);
+            pio_sm_put_blocking(pio, sm, w1);
+            pio_sm_put_blocking(pio, sm, pulse_cycles);
             pushed++;
         }
         while (pushed--) (void)pio_sm_get_blocking(pio, sm);   // wait until pulses are over
@@ -71,7 +79,7 @@ static void __not_in_flash_func(fire_column)(const uint16_t words[HP45_ADDRESSES
 
 static void __not_in_flash_func(run_pass)(void) {
     fj_pass_t *p = cur_pass;
-    uint16_t words[HP45_ADDRESSES];
+    static fj_words_t words;
     result = FJ_OK;
     if (!fj_pass_compose(p, 0, words)) { result = FJ_E_FRAME; return; }
     for (int32_t j = 0; j < p->steps; ) {
@@ -86,8 +94,8 @@ static void __not_in_flash_func(run_pass)(void) {
 }
 
 static void __not_in_flash_func(run_spit)(void) {
-    uint16_t words[HP45_ADDRESSES];
-    fj_words_for_nozzle(&tables, spit_nozzle, words);
+    static fj_words_t words;
+    fj_words_for_nozzle(&tables, heads, spit_head, spit_nozzle, words);
     result = FJ_OK;
     for (uint32_t i = 0; i < spit_count && !abort_req; i++) {
         fire_column(words);
@@ -109,7 +117,11 @@ static void __not_in_flash_func(core1_main)(void) {
 
 // ---------------------------------------------------------------- core0 API
 void head_configure(void) {
-    fj_compose_tables(&tables, PRM(NOZZLE0_DOWNSTREAM));
+    heads = PRM(N_HEADS);
+    if (heads < 1) heads = 1;
+    if (heads > MAX_HEADS) heads = MAX_HEADS;
+    int8_t dy[FJ_MAX_HEADS] = {0, (int8_t)PRM(HEAD1_DY_ROWS), (int8_t)PRM(HEAD2_DY_ROWS), (int8_t)PRM(HEAD3_DY_ROWS)};
+    fj_compose_tables(&tables, heads, PRM(NOZZLE0_DOWNSTREAM), dy);
     groups = PRM(PRIM_GROUPS);
     if (groups < 1) groups = 1;
     if (groups > 4) groups = 4;
@@ -122,6 +134,7 @@ void head_configure(void) {
 }
 
 const fj_tables_t *head_tables(void) { return &tables; }
+int head_count(void) { return heads; }
 
 void head_init(void) {
     const uint outs[] = {PIN_H_CLR_N, PIN_A_SER, PIN_A_SRCLK, PIN_A_RCLK, PIN_HEAD_PWR};
@@ -130,9 +143,14 @@ void head_init(void) {
         gpio_set_dir(outs[i], GPIO_OUT);
         gpio_put(outs[i], 0);
     }
+    for (int b = 0; b < 256; b++) {
+        uint32_t v = 0;
+        for (int i = 0; i < 8; i++) if (b >> i & 1) v |= 1u << (4 * i);
+        spread8[b] = v;
+    }
     sm = pio_claim_unused_sm(pio, true);
     uint offset = pio_add_program(pio, &fj_fire_program);
-    fj_fire_program_init(pio, sm, offset, PIN_P_SER, PIN_P_SRCLK, PIN_P_RCLK,
+    fj_fire_program_init(pio, sm, offset, PIN_P_SER0, PIN_P_SRCLK, PIN_P_RCLK,
                          (float)clock_get_hz(clk_sys) / PIO_FIRE_HZ);
     // clear both chains and latch zeros (FIRE is low, so primitives stay disabled anyway)
     gpio_put(PIN_H_CLR_N, 0);
@@ -156,7 +174,9 @@ void head_start_pass(fj_pass_t *p) {
 }
 
 void head_start_spit(int nozzle, uint32_t count, uint32_t period_us) {
-    spit_nozzle = nozzle;
+    // nozzle: -1 = every nozzle of every cartridge, else head * 300 + nozzle
+    spit_head = nozzle < 0 ? -1 : nozzle / HP45_NOZZLES;
+    spit_nozzle = nozzle < 0 ? -1 : nozzle % HP45_NOZZLES;
     spit_count = count;
     spit_period_us = period_us;
     abort_req = false;
@@ -169,7 +189,7 @@ int head_result(void) { return result; }
 void head_abort(void) { abort_req = true; }
 
 float head_column_time_us(void) {
-    float shift = 16 * 4 / 30.0f + 0.5f;                    // PIO shift + latch + settle
+    float shift = 16 * 4 / 30.0f + 0.5f + 0.3f;             // PIO shift + latch + settle + CPU
     float pulse = (pulse_cycles + 3) / 30.0f;               // pulse + overhead
     return HP45_ADDRESSES * (0.6f + groups * (shift + pulse + 0.4f)) + 2.0f;
 }

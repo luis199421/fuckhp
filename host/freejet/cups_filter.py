@@ -12,7 +12,7 @@ from PIL import Image
 
 from .cups_raster import read_pages
 from .job import job_frames
-from .raster import to_ink
+from .color import INKSETS, separate
 
 
 def parse_options(s: str) -> dict:
@@ -38,6 +38,11 @@ def main(argv=None):
         opts.get("FJDither", "Auto"), "auto")
     roll = opts.get("FJMediaSource", "Sheet") == "Roll"
     cut_pause = roll and opts.get("FJCutPause", "True").lower() in ("true", "on", "yes", "1")
+    inkset = opts.get("FJInkSet", "K")
+    if inkset not in INKSETS:
+        log(f"ERROR: unknown ink set {inkset}")
+        return 1
+    gamma = float(opts.get("FJGamma", "1.0"))
     src = open(argv[6], "rb") if len(argv) == 7 else sys.stdin.buffer
 
     def pages():
@@ -48,17 +53,21 @@ def main(argv=None):
             # copies are expanded upstream by CUPS (*cupsManualCopies: True)
             log(f"PAGE: {n} 1")
             log(f"INFO: Preparing page {n}")
-            ink = to_ink(Image.fromarray(gray, "L"), dither)
+            img = Image.fromarray(gray, "RGB" if gray.ndim == 3 else "L")
+            ink = separate(img, inkset, dither, gamma)
+            if len(INKSETS[inkset]) == 1:
+                ink = ink[0]
             # CUPS may send only the imageable area: put it back on a full page
             dx, dy = h.page_offset_px()
             pw = round(h.page_size_pt[0] * 600 / 72)
             ph = round(h.page_size_pt[1] * 600 / 72)
-            page = np.zeros((max(ph, dy + ink.shape[0]), max(pw, dx + ink.shape[1])), bool)
-            page[dy:dy + ink.shape[0], dx:dx + ink.shape[1]] = ink
+            hh, ww = ink.shape[-2:]
+            page = np.zeros(ink.shape[:-2] + (max(ph, dy + hh), max(pw, dx + ww)), bool)
+            page[..., dy:dy + hh, dx:dx + ww] = ink
             yield page
 
     out = sys.stdout.buffer
-    for fr in job_frames(pages(), bidirectional=bidir, roll=roll, cut_pause=cut_pause):
+    for fr in job_frames(pages(), bidirectional=bidir, roll=roll, cut_pause=cut_pause, inkset=inkset):
         out.write(fr)
     out.flush()
     return 0

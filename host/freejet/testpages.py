@@ -116,3 +116,40 @@ def feed_page(length_mm=250.0, width_mm=200) -> np.ndarray:
     yy = np.arange(y1 + round(20 * MM), y2 - round(5 * MM))
     page[yy[:, None], np.arange(sx0, sx1)[None, :]] = ((yy[:, None] + np.arange(sx0, sx1)[None, :]) % 2 == 0)
     return page
+
+
+def heads_page(n_heads: int, span=6, width_mm=200) -> np.ndarray:
+    """Line up cartridges 1..n-1 against cartridge 0 (slot 0 = left-most).
+    For each slot two rows of 13 blocks (k = -6..+6):
+      X: vertical lines, slot 0 at x, slot s at x + k  -> pick the block where they merge,
+         then  freejet calibrate head-x <slot> <k>
+      Y: short horizontal dashes, slot 0 at row y, slot s at row y + k -> pick the block where
+         they form one straight line, then  freejet calibrate head-y <slot> <k>
+    Returns (planes, rows, cols)."""
+    w = round(width_mm * MM)
+    block_w = w // (2 * span + 1)
+    band = 2 * ROWS + round(14 * MM)
+    planes = np.zeros((n_heads, max(1, n_heads - 1) * band + 60, w), dtype=bool)
+    for s in range(1, n_heads):
+        top = (s - 1) * band
+        img, d = _canvas(width_mm, 12)
+        f = _font(round(2.6 * MM))
+        d.text((0, 0), f"slot {s}:  X blocks (top) -> calibrate head-x {s} <k>;  "
+                       f"Y blocks (bottom) -> calibrate head-y {s} <k>", font=f, fill=0)
+        for i, k in enumerate(range(-span, span + 1)):
+            d.text((i * block_w + round(2 * MM), round(5.5 * MM)), f"{k:+d}", font=f, fill=0)
+        lab = _ink(img)
+        planes[0, top:top + lab.shape[0], :lab.shape[1]] |= lab
+        y0 = top + lab.shape[0] + 10
+        for i, k in enumerate(range(-span, span + 1)):
+            bx = i * block_w + round(2 * MM) + span
+            for line in range(5):                     # X: vertical lines
+                x = bx + line * round(1.6 * MM)
+                planes[0, y0:y0 + 120, x] = True
+                planes[s, y0:y0 + 120, x + k] = True
+            yy = y0 + 160 + 40                        # Y: dashes side by side
+            planes[0, yy, bx:bx + 60] = True
+            planes[s, yy + k, bx + 60:bx + 120] = True
+            planes[0, yy + 60, bx:bx + 60] = True
+            planes[s, yy + 60 + k, bx + 60:bx + 120] = True
+    return planes

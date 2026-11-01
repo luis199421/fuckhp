@@ -55,6 +55,14 @@ PARAMS = [
     Param(44, "tsr_max", 3900, 0, 4095, "TSR ADC reading above this = no cartridge / open"),
     Param(45, "tsr_hot_delta", 400, 10, 4095, "pause between passes when TSR rises this much above cold value"),
     Param(46, "vhd_min_mv", 10500, 5000, 16000, "refuse to fire below this head supply voltage"),
+    # --- extra cartridges (grayscale / colour builds) -------------------------
+    Param(47, "n_heads", 1, 1, 4, "cartridges fitted: 1 black, 2 black+light black, 3 CMY, 4 KCMY"),
+    Param(48, "head1_x_um", 28000, 5000, 150000, "slot 1 nozzle position right of slot 0 (calibrate: freejet test heads)"),
+    Param(49, "head2_x_um", 56000, 5000, 150000, "slot 2 nozzle position right of slot 0"),
+    Param(50, "head3_x_um", 84000, 5000, 150000, "slot 3 nozzle position right of slot 0"),
+    Param(51, "head1_dy_rows", 0, -6, 6, "slot 1 vertical alignment in 1/600 in rows (uses spare nozzles)"),
+    Param(52, "head2_dy_rows", 0, -6, 6, "slot 2 vertical alignment"),
+    Param(53, "head3_dy_rows", 0, -6, 6, "slot 3 vertical alignment"),
     # --- misc ----------------------------------------------------------------
     Param(60, "idle_motor_off_s", 30, 0, 3600, "disable motors after this many idle seconds (0 = never)"),
     Param(61, "job_timeout_s", 120, 5, 3600, "abort a job if the host goes silent this long mid-page"),

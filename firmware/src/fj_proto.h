@@ -10,6 +10,9 @@
 #define FJ_DPI           600
 #define FJ_ROWS          300
 #define FJ_COL_BYTES     38
+#define FJ_ROWS_MULTI    288     // rows per pass with 2+ cartridges
+#define FJ_ROW_SPARE     6       // spare nozzles at each end for vertical head alignment
+#define FJ_MAX_PLANES    4
 #define FJ_UM_PER_COL    (25400.0f / FJ_DPI)
 
 enum {
@@ -46,7 +49,7 @@ enum {
     FJ_OK = 0, FJ_E_CRC, FJ_E_FRAME, FJ_E_UNKNOWN_CMD, FJ_E_BAD_ARG, FJ_E_BUSY, FJ_E_NO_HEAD,
     FJ_E_NOT_HOMED, FJ_E_HOME_FAILED, FJ_E_RANGE, FJ_E_SWATH_TOO_BIG, FJ_E_UNDERRUN,
     FJ_E_PAPER_JAM, FJ_E_HEAD_HOT, FJ_E_NO_VHD, FJ_E_ABORTED, FJ_E_FLASH, FJ_E_QUEUE_FULL,
-    FJ_E_BACKFEED, FJ_E_NO_JOB, FJ_E_UNKNOWN_PARAM, FJ_E_TOO_FAST,
+    FJ_E_BACKFEED, FJ_E_NO_JOB, FJ_E_UNKNOWN_PARAM, FJ_E_TOO_FAST, FJ_E_INKSET,
 };
 
 #pragma pack(push, 1)

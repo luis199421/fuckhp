@@ -25,6 +25,8 @@ class VirtualPrinter:
         self._out = bytearray()
         self._job = False
         self._roll = False
+        self.n_heads = 1          # like the firmware's n_heads parameter
+        self._planes = 1
         self._page = None
         self._paper_y_um = 0
         self._swath = None
@@ -55,9 +57,9 @@ class VirtualPrinter:
         self._send(P.EVENT, P.EVENT_S.pack(code, 0, arg, value))
 
     def _ensure_rows(self, rows):
-        if self._page.shape[0] < rows:
-            grow = np.zeros((rows - self._page.shape[0] + 2000, self.max_cols), bool)
-            self._page = np.vstack([self._page, grow])
+        if self._page.shape[1] < rows:
+            grow = np.zeros((self._planes, rows - self._page.shape[1] + 2000, self.max_cols), bool)
+            self._page = np.concatenate([self._page, grow], axis=1)
 
     def _handle(self, fr: P.Frame):
         t, p = fr.type, fr.payload
@@ -88,12 +90,15 @@ class VirtualPrinter:
                 self.params = {q.id: q.default for q in PARAMS}
             self._ack(fr)
         elif t == P.JOB_BEGIN:
-            self._job, self._roll = True, bool(p[0] & P.JOB_ROLL)
+            planes = max(1, p[1]) if len(p) > 1 else 1
+            if planes != self.n_heads:
+                return self._ack(fr, 22)
+            self._job, self._roll, self._planes = True, bool(p[0] & P.JOB_ROLL), planes
             self._ack(fr)
         elif t == P.PAGE_BEGIN:
             if not self._job:
                 return self._ack(fr, 19)
-            self._page = np.zeros((4000, self.max_cols), bool)
+            self._page = np.zeros((self._planes, 4000, self.max_cols), bool)
             self._paper_y_um = 0
             self._ack(fr)
             self._event(P.EV_PAPER_LOADED)
@@ -101,13 +106,18 @@ class VirtualPrinter:
             if self._page is None:
                 return self._ack(fr, 19)
             y_um, x0, ncols, direction, flags, _, n = P.SWATH_S.unpack(p[:P.SWATH_S.size])
+            lens = (n,)
+            if self._planes > 1:
+                lens = struct.unpack_from(f"<{self._planes}I", p, P.SWATH_S.size)
+                if sum(lens) != n:
+                    return self._ack(fr, 4)
             if y_um < self._paper_y_um:
                 return self._ack(fr, 18)
             if n > self.ring_bytes:
                 return self._ack(fr, 10)
             if x0 < 0 or x0 + ncols > self.max_cols or ncols == 0:
                 return self._ack(fr, 9)
-            self._swath = (y_um, x0, ncols, direction, flags, n)
+            self._swath = (y_um, x0, ncols, direction, flags, n, lens)
             self._swath_buf = bytearray()
             self._ack(fr)
             if n == 0:
@@ -120,10 +130,13 @@ class VirtualPrinter:
             if len(self._swath_buf) >= self._swath[5]:
                 self._finish_swath()
         elif t == P.PAGE_END:
+            if self._page is None:
+                return self._ack(fr, 19)
             self._ack(fr)
-            used = np.flatnonzero(self._page.any(axis=1))
+            used = np.flatnonzero(self._page.any(axis=(0, 2)))
             h = int(used[-1]) + 1 if len(used) else 0
-            self.pages.append(self._page[:max(h, 1)].copy())
+            pg = self._page[:, :max(h, 1)].copy()
+            self.pages.append(pg[0] if self._planes == 1 else pg)
             self._page = None
             self._pages_done += 1
             self._event(P.EV_PAGE_DONE, 0, self._pages_done)
@@ -135,15 +148,19 @@ class VirtualPrinter:
             self._ack(fr, 3)
 
     def _finish_swath(self):
-        y_um, x0, ncols, direction, flags, n = self._swath
+        y_um, x0, ncols, direction, flags, n, lens = self._swath
         data = bytes(self._swath_buf[:n])
-        raw = packbits.decode(data, ncols * P.COL_BYTES) if flags & P.SWATH_PACKBITS else data
-        cols = np.frombuffer(raw, np.uint8).reshape(ncols, P.COL_BYTES)
-        if direction == 1:
-            cols = cols[::-1]
-        bits = np.unpackbits(cols, axis=1, bitorder="little")[:, :P.ROWS].T.astype(bool)
         y = round(y_um / P.UM_PER_COL)
         self._ensure_rows(y + P.ROWS)
-        self._page[y:y + P.ROWS, x0:x0 + ncols] |= bits
+        off = 0
+        for pl, ln in enumerate(lens):
+            chunk = data[off:off + ln]
+            off += ln
+            raw = packbits.decode(chunk, ncols * P.COL_BYTES) if flags & P.SWATH_PACKBITS else chunk
+            cols = np.frombuffer(raw, np.uint8).reshape(ncols, P.COL_BYTES)
+            if direction == 1:
+                cols = cols[::-1]
+            bits = np.unpackbits(cols, axis=1, bitorder="little")[:, :P.ROWS].T.astype(bool)
+            self._page[pl, y:y + P.ROWS, x0:x0 + ncols] |= bits
         self._paper_y_um = y_um
         self._swath = None

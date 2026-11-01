@@ -60,7 +60,8 @@ def _parse_header(raw: bytes, endian: str) -> PageHeader:
 
 
 def read_pages(f: BinaryIO) -> Iterator[tuple[PageHeader, np.ndarray]]:
-    """Yield (header, gray) with gray = uint8 array (height, width), 255 = white."""
+    """Yield (header, image) with image = uint8 (height, width) grey or (height, width, 3)
+    RGB, 255 = white."""
     sync = f.read(4)
     if sync in SYNC_BE:
         endian, version = ">", SYNC_BE[sync]
@@ -73,7 +74,7 @@ def read_pages(f: BinaryIO) -> Iterator[tuple[PageHeader, np.ndarray]]:
         if len(raw) < HEADER_SIZE:
             return
         h = _parse_header(raw, endian)
-        if h.bits_per_pixel not in (1, 8) or h.color_order != 0:
+        if h.bits_per_pixel not in (1, 8, 24) or h.color_order != 0:
             raise ValueError(f"unsupported raster: {h.bits_per_pixel} bpp, order {h.color_order}")
         if version == 2:
             data = _read_compressed(f, h)
@@ -84,6 +85,8 @@ def read_pages(f: BinaryIO) -> Iterator[tuple[PageHeader, np.ndarray]]:
             bits = np.unpackbits(rows, axis=1)[:, :h.width]
             ink = bits.astype(bool) if h.color_space in BLACK_IS_ONE else ~bits.astype(bool)
             gray = np.where(ink, 0, 255).astype(np.uint8)
+        elif h.bits_per_pixel == 24:
+            gray = rows[:, :h.width * 3].reshape(h.height, h.width, 3).copy()
         else:
             gray = rows[:, :h.width].copy()
             if h.color_space in BLACK_IS_ONE:

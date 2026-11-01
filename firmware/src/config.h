@@ -19,13 +19,17 @@
 #define PIN_A_SER       13   // address chain (3x 74HCT595 -> 3x TBD62783A -> A1..A22)
 #define PIN_A_SRCLK     14
 #define PIN_A_RCLK      15
-#define PIN_P_SER       16   // primitive chain (2x 74HCT595 -> 2x TBD62783A -> P1..P14), PIO OUT
-#define PIN_P_SRCLK     17   // PIO side-set
-#define PIN_P_RCLK      18   // PIO SET base
-#define PIN_FIRE        19   // PIO SET base + 1 -> one-shot -> 595 /OE (fire pulse)
+#define PIN_P_SER0      16   // primitive chain data, one line per cartridge slot: GP16..GP19
+                             // (2x 74HCT595 -> 2x TBD62783A -> P1..P14 on each head board), PIO OUT x4
+#define PIN_P_SRCLK     20   // PIO side-set (shared by all head boards)
+#define PIN_P_RCLK      21   // PIO SET base (shared)
+#define PIN_FIRE        22   // PIO SET base + 1 -> one-shot on each board -> 595 /OE (shared)
+#define MAX_HEADS       4
 
 // --- analog ----------------------------------------------------------------------
-#define PIN_ADC_TSR     26   // ADC0: cartridge thermal sense resistor (1k pull-up to 3V3)
+#define PIN_TSR_SEL0    0    // 74HC4051 select lines: which cartridge's TSR goes to ADC0
+#define PIN_TSR_SEL1    1    // (single-cartridge builds can leave the mux out: slot 0 = no select)
+#define PIN_ADC_TSR     26   // ADC0: cartridge thermal sense resistor (1k pull-up to 3V3, via mux)
 #define PIN_ADC_VHD     27   // ADC1: head supply through 100k/15k divider
 #define ADC_CH_TSR      0
 #define ADC_CH_VHD      1

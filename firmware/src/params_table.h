@@ -31,6 +31,13 @@
     X( 44, TSR_MAX               ,     3900,        0,     4095) \
     X( 45, TSR_HOT_DELTA         ,      400,       10,     4095) \
     X( 46, VHD_MIN_MV            ,    10500,     5000,    16000) \
+    X( 47, N_HEADS               ,        1,        1,        4) \
+    X( 48, HEAD1_X_UM            ,    28000,     5000,   150000) \
+    X( 49, HEAD2_X_UM            ,    56000,     5000,   150000) \
+    X( 50, HEAD3_X_UM            ,    84000,     5000,   150000) \
+    X( 51, HEAD1_DY_ROWS         ,        0,       -6,        6) \
+    X( 52, HEAD2_DY_ROWS         ,        0,       -6,        6) \
+    X( 53, HEAD3_DY_ROWS         ,        0,       -6,        6) \
     X( 60, IDLE_MOTOR_OFF_S      ,       30,        0,     3600) \
     X( 61, JOB_TIMEOUT_S         ,      120,        5,     3600) \
 

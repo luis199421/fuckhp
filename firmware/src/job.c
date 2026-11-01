@@ -26,6 +26,7 @@ typedef struct {
     uint8_t type, seq;
     int32_t a, b;
     fj_swath_begin_t sw;
+    uint32_t plane_len[FJ_MAX_PLANES];
     uint32_t start;        // ring position of swath data
     bool ready;            // swath: all data received
 } op_t;
@@ -42,7 +43,8 @@ static uint8_t state = FJ_ST_IDLE, last_event;
 static uint16_t last_error, pages_done;
 static bool job_active, job_failed, roll_mode, homed, abort_req;
 static int32_t paper_y_um, page_length_um;
-static uint16_t tsr_cold;
+static uint16_t tsr_cold[FJ_MAX_PLANES];
+static int job_planes = 1;
 static uint32_t idle_since_ms;
 static fj_pass_t pass;
 
@@ -82,7 +84,7 @@ static void send_status(void) {
               (state == FJ_ST_WAIT_PAPER ? FJ_FL_WAIT_PAPER : 0) |
               (state == FJ_ST_WAIT_BUTTON ? FJ_FL_WAIT_BUTTON : 0);
     s.error = last_error;
-    s.tsr = sensors_tsr_raw();
+    s.tsr = sensors_tsr_raw(0);
     s.vhd_mv = sensors_vhd_mv();
     s.ring_free = fj_ring_free(&ring);
     s.queue_len = (uint8_t)q_len();
@@ -183,9 +185,18 @@ void job_handle_frame(const fj_frame_t *f) {
     o->ready = true;
     memcpy(&o->a, p, f->len < 4 ? f->len : 4);
     if (f->len >= 8) memcpy(&o->b, p + 4, 4);
+    if (f->type == FJ_JOB_BEGIN) job_planes = f->len > 1 && p[1] ? p[1] : 1;
     if (f->type == FJ_SWATH_BEGIN) {
         if (f->len < sizeof o->sw) { comm_ack(f->seq, f->type, FJ_E_BAD_ARG); return; }
         memcpy(&o->sw, p, sizeof o->sw);
+        o->plane_len[0] = o->sw.data_len;
+        if (job_planes > 1) {      // per-plane lengths follow the fixed header
+            if (f->len < sizeof o->sw + 4u * job_planes) { comm_ack(f->seq, f->type, FJ_E_BAD_ARG); return; }
+            memcpy(o->plane_len, p + sizeof o->sw, 4u * job_planes);
+            uint32_t sum = 0;
+            for (int i = 0; i < job_planes; i++) sum += o->plane_len[i];
+            if (sum != o->sw.data_len) { comm_ack(f->seq, f->type, FJ_E_BAD_ARG); return; }
+        }
         if (o->sw.data_len > RING_BYTES) { comm_ack(f->seq, f->type, FJ_E_SWATH_TOO_BIG); return; }
         if (o->sw.ncols == 0 || o->sw.x0 < 0 || o->sw.x0 + o->sw.ncols > PRM(MAX_COLS)) {
             comm_ack(f->seq, f->type, FJ_E_RANGE); return;
@@ -266,16 +277,25 @@ static int power_up_head(void) {
     absolute_time_t until = make_timeout_time_ms(300);
     while (!time_reached(until)) service();
     if (sensors_vhd_mv() < PRM(VHD_MIN_MV)) { head_power(false); return FJ_E_NO_VHD; }
-    tsr_cold = sensors_tsr_raw();
+    for (int h = 0; h < head_count(); h++) tsr_cold[h] = sensors_tsr_raw(h);
     return FJ_OK;
 }
 
+static int hottest(void) {            // largest TSR change of any cartridge since power-up
+    int d = 0;
+    for (int h = 0; h < head_count(); h++) {
+        int x = abs((int)sensors_tsr_raw(h) - (int)tsr_cold[h]);
+        if (x > d) d = x;
+    }
+    return d;
+}
+
 static int wait_cool(void) {
-    int delta = abs((int)sensors_tsr_raw() - (int)tsr_cold);
+    int delta = hottest();
     if (delta <= PRM(TSR_HOT_DELTA)) return FJ_OK;
     event(FJ_EV_HEAD_HOT, 0, delta);
     absolute_time_t until = make_timeout_time_ms(60000);
-    while (abs((int)sensors_tsr_raw() - (int)tsr_cold) > PRM(TSR_HOT_DELTA) * 7 / 10) {
+    while (hottest() > PRM(TSR_HOT_DELTA) * 7 / 10) {
         service();
         if (abort_req) return FJ_E_ABORTED;
         if (time_reached(until)) return FJ_E_HEAD_HOT;
@@ -333,8 +353,14 @@ static int do_swath(op_t *o) {
         paper_y_um = s->y_um;
     }
     int32_t off_odd = (int32_t)lroundf(PRM(ROW_GAP_UM) / FJ_UM_PER_COL);
-    fj_pass_setup(&pass, head_tables(), &ring, o->start, s->data_len, s->flags & FJ_SWATH_PACKBITS,
-                  s->x0, s->ncols, s->dir, off_odd);
+    int heads = head_count();
+    uint32_t starts[FJ_MAX_PLANES], acc = o->start;
+    for (int h = 0; h < heads; h++) { starts[h] = acc; acc += o->plane_len[h]; }
+    const int32_t head_x_um[FJ_MAX_PLANES] = {0, PRM(HEAD1_X_UM), PRM(HEAD2_X_UM), PRM(HEAD3_X_UM)};
+    int32_t head_off[FJ_MAX_PLANES];
+    for (int h = 0; h < FJ_MAX_PLANES; h++) head_off[h] = (int32_t)lroundf(head_x_um[h] / FJ_UM_PER_COL);
+    fj_pass_setup(&pass, head_tables(), &ring, starts, o->plane_len, s->flags & FJ_SWATH_PACKBITS, heads,
+                  s->x0, s->ncols, s->dir, head_off, off_odd);
     // never go faster than the head can fire a full column
     float speed = PRM(X_SPEED_MM_S);
     float vmax = FJ_UM_PER_COL / head_column_time_us() * 1000.0f * 0.85f;
@@ -363,6 +389,8 @@ static int do_swath(op_t *o) {
 static int exec(op_t *o) {
     switch (o->type) {
     case FJ_JOB_BEGIN: {
+        int planes = (o->a >> 8 & 0xFF) ? (o->a >> 8 & 0xFF) : 1;
+        if (planes != head_count()) return FJ_E_INKSET;   // e.g. a CMYK job on a black-only printer
         job_active = true;
         roll_mode = o->a & FJ_JOB_ROLL;
         pages_done = 0;
@@ -429,7 +457,7 @@ static int exec(op_t *o) {
         if (e) return e;
         int nozzle = -1;
         uint32_t count = o->a & 0xFFFF;
-        if (o->type == FJ_NOZZLE_FIRE) {
+        if (o->type == FJ_NOZZLE_FIRE) {   // nozzle = head * 300 + n, 0xFFFF = all
             nozzle = (o->a & 0xFFFF) == 0xFFFF ? -1 : (o->a & 0xFFFF);
             count = (uint32_t)o->a >> 16;
         }

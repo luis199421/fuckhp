@@ -16,7 +16,7 @@ int main(void) {
     gpio_set_dir(PIN_HEAD_PWR, GPIO_OUT);
     gpio_put(PIN_HEAD_PWR, 0);
 
-    stdio_init_all();   // UART0 debug console on GP0/GP1
+    stdio_init_all();   // no console: GP0/GP1 drive the TSR multiplexer
     bool stored = params_load();
     sensors_init();
     motion_init();

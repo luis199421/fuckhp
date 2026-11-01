@@ -20,6 +20,9 @@ PROTO_VERSION = 1
 
 DPI = 600
 ROWS = 300                    # nozzles per pass
+ROWS_MULTI = 288              # rows used per pass with 2+ cartridges: 6 spare nozzles at each
+                              # end let the firmware line the cartridges up vertically
+MAX_PLANES = 4
 COL_BYTES = (ROWS + 7) // 8   # 38 bytes per pixel column
 UM_PER_COL = 25400 / DPI      # 42.333 um
 
@@ -56,8 +59,10 @@ LOG = 0x85
 
 # JOB_BEGIN flags
 JOB_ROLL = 0x01
+# JOB_BEGIN payload: u8 flags, u8 planes (0 = 1), u8 ink set id, u8 pad
 # SWATH_BEGIN flags
 SWATH_PACKBITS = 0x01
+# with planes > 1, SWATH_BEGIN is followed by u32 plane_len[planes]; data = planes back to back
 # PAGE_END flags
 PAGE_END_CUT_PAUSE = 0x01
 
@@ -78,6 +83,7 @@ ERRORS = {
     12: "paper jam", 13: "printhead too hot", 14: "no head voltage", 15: "aborted",
     16: "flash write failed", 17: "queue full", 18: "paper cannot move backwards",
     19: "no job active", 20: "unknown parameter", 21: "column rate too high for speed",
+    22: "the job's ink set doesn't match the cartridges fitted (param n_heads)",
 }
 
 INFO_S = struct.Struct("<HH16sIHHHH")          # 32 bytes
@@ -163,8 +169,16 @@ class Parser:
 # ---- payload helpers ------------------------------------------------------
 
 def swath_begin(y_um: int, x0: int, ncols: int, direction: int, data_len: int,
-                flags: int = SWATH_PACKBITS) -> bytes:
-    return SWATH_S.pack(y_um, x0, ncols, direction, flags, 0, data_len)
+                flags: int = SWATH_PACKBITS, plane_lens: list[int] | None = None) -> bytes:
+    head = SWATH_S.pack(y_um, x0, ncols, direction, flags, 0, data_len)
+    if plane_lens and len(plane_lens) > 1:
+        assert sum(plane_lens) == data_len
+        head += struct.pack(f"<{len(plane_lens)}I", *plane_lens)
+    return head
+
+
+def job_begin(roll: bool = False, planes: int = 1, inkset_id: int = 0) -> bytes:
+    return bytes([JOB_ROLL if roll else 0, planes, inkset_id, 0])
 
 
 def decode_info(p: bytes) -> dict:

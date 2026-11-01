@@ -6,6 +6,7 @@ from typing import Iterator
 import numpy as np
 from PIL import Image, ImageDraw, ImageFont, ImageOps
 
+from .color import INKSETS, separate
 from .protocol import DPI
 
 MM = DPI / 25.4  # pixels per mm
@@ -26,6 +27,8 @@ class PageSetup:
     margin_mm: float = 3.0
     fit: bool = True               # scale to the printable area (keeps aspect)
     dither: str = "auto"           # auto | fs | threshold | ordered
+    inkset: str = "K"              # K | KLK | CMY | CMYK  (see color.py)
+    gamma: float = 1.0             # >1 lightens mid-tones (compensates ink spread)
 
     @property
     def size_px(self) -> tuple[int, int] | None:
@@ -60,12 +63,14 @@ def to_ink(gray: Image.Image, method: str = "auto") -> np.ndarray:
 
 
 def place(img: Image.Image, setup: PageSetup, src_dpi: float | None = None) -> np.ndarray:
-    """Scale/position a grayscale image onto the page; return an ink mask."""
+    """Scale/position an image onto the page and separate it into ink planes.
+    Returns bool (rows, cols) for the plain black ink set, else (planes, rows, cols)."""
     pw, ph = setup.size_px
     m = round(setup.margin_mm * MM)
     aw = pw - 2 * m
     ah = None if ph is None else ph - 2 * m
-    img = img.convert("L")
+    mono = setup.inkset in ("K", "KLK")
+    img = img.convert("L" if mono else "RGB")
     if setup.fit:
         s = aw / img.width
         if ah is not None:
@@ -75,13 +80,13 @@ def place(img: Image.Image, setup: PageSetup, src_dpi: float | None = None) -> n
     if abs(s - 1) > 1e-3:
         img = img.resize((max(1, round(img.width * s)), max(1, round(img.height * s))),
                          Image.Resampling.LANCZOS)
-    ink = to_ink(img, setup.dither)
-    height = ph if ph is not None else ink.shape[0] + 2 * m
-    page = np.zeros((height, pw), dtype=bool)
-    hh = min(ink.shape[0], height - 2 * m)
-    ww = min(ink.shape[1], aw)
-    page[m:m + hh, m:m + ww] = ink[:hh, :ww]
-    return page
+    height = ph if ph is not None else img.height + 2 * m
+    canvas = Image.new(img.mode, (pw, height), "white")
+    canvas.paste(img.crop((0, 0, min(img.width, aw), min(img.height, height - 2 * m))), (m, m))
+    if setup.inkset == "K":
+        return to_ink(canvas, setup.dither) if setup.gamma == 1.0 else \
+            separate(canvas, "K", setup.dither, setup.gamma)[0]
+    return separate(canvas, setup.inkset, setup.dither, setup.gamma)
 
 
 def load_pages(path: str | Path, setup: PageSetup, pages: set[int] | None = None) -> Iterator[np.ndarray]:
@@ -100,7 +105,7 @@ def load_pages(path: str | Path, setup: PageSetup, pages: set[int] | None = None
                 continue
             img.seek(i)
             frame = ImageOps.exif_transpose(img)
-            if frame.mode in ("RGBA", "LA", "P"):
+            if frame.mode in ("RGBA", "LA", "P", "PA"):
                 bg = Image.new("RGBA", frame.size, "white")
                 frame = Image.alpha_composite(bg, frame.convert("RGBA"))
             dpi = img.info.get("dpi", (DPI, DPI))[0] or DPI
@@ -125,7 +130,7 @@ def _pdf_pages(path, setup, pages):
             m = 2 * setup.margin_mm * MM
             scale = min(scale, (pw - m) / w_pt) if ph is None else \
                 min(scale, (pw - m) / w_pt, (ph - m) / h_pt)
-        img = page.render(scale=scale, grayscale=True).to_pil()
+        img = page.render(scale=scale, grayscale=setup.inkset in ("K", "KLK")).to_pil()
         fit_setup = PageSetup(**{**setup.__dict__, "fit": False})
         yield place(img, fit_setup, DPI)
 
@@ -149,7 +154,17 @@ def _text_pages(text: str, setup: PageSetup, pt: float = 10.0):
         d = ImageDraw.Draw(img)
         for j, line in enumerate(chunk):
             d.text((m, m + j * line_h), line, fill=0, font=font)
-        yield to_ink(img, "threshold")
+        ink = to_ink(img, "threshold")
+        n = len(INKSETS[setup.inkset])
+        if n == 1:
+            yield ink
+        else:   # text always goes to the black slot (or to C+M+Y for a CMY set)
+            planes = np.zeros((n,) + ink.shape, bool)
+            if setup.inkset == "CMY":
+                planes[:] = ink
+            else:
+                planes[0] = ink
+            yield planes
 
 
 def parse_ranges(spec: str | None) -> set[int] | None:

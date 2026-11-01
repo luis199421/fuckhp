@@ -1,25 +1,34 @@
-; FreeJet printhead fire engine.
+; FreeJet printhead fire engine, up to 4 cartridges in parallel.
 ;
-; One 32-bit word per sub-pulse:  [31:16] primitive bits (P1 = bit 16)  [15:0] pulse length
-;   1. shift the 16 primitive bits MSB first into the 2x 74HCT595 primitive chain
+; Per sub-pulse the CPU pushes three words:
+;   W0, W1  64 bits = 16 shift clocks x 4 data lines (one per cartridge slot), MSB first:
+;           bits 31..28 of W0 go out on the first clock, bit h of each nibble -> P_SER<h>
+;   W2      pulse length in PIO cycles
+;   1. shift 16 bits into every head board's 2x 74HCT595 primitive chain at once
 ;   2. latch them (RCLK) while FIRE is low, so the drivers stay disabled
-;   3. raise FIRE for the requested number of cycles: FIRE AND one-shot -> 595 /OE low
+;   3. raise FIRE for W2 cycles: FIRE AND one-shot -> 595 /OE low on every board
 ;   4. drop FIRE and push a word to the RX FIFO so the CPU knows the pulse is over
 ;
-; pins: OUT = P_SER, side-set = P_SRCLK, SET = {P_RCLK (bit 0), FIRE (bit 1)}
-; clock: 30 MHz -> 4 cycles per bit = 7.5 MHz shift clock (fine for the ribbon cable)
+; pins: OUT = P_SER0..3, side-set = P_SRCLK, SET = {P_RCLK (bit 0), FIRE (bit 1)}
+; clock: 30 MHz -> 4 cycles per bit = 7.5 MHz shift clock (fine for ribbon cables)
 
 .program fj_fire
 .side_set 1 opt
 .wrap_target
     pull block
-    set x, 15
-bitloop:
-    out pins, 1         side 0 [1]
-    jmp x-- bitloop     side 1 [1]
+    set x, 7
+lo:
+    out pins, 4         side 0 [1]
+    jmp x-- lo          side 1 [1]
+    pull block
+    set x, 7
+hi:
+    out pins, 4         side 0 [1]
+    jmp x-- hi          side 1 [1]
     set pins, 1         side 0 [2]  ; RCLK high: outputs take the new primitive pattern
     set pins, 0                [7]  ; RCLK low, let the address/primitive lines settle (~270 ns)
-    out y, 16
+    pull block
+    mov y, osr
     set pins, 2                     ; FIRE high: pulse starts
 pulse:
     jmp y-- pulse
@@ -28,21 +37,19 @@ pulse:
 .wrap
 
 % c-sdk {
-static inline void fj_fire_program_init(PIO pio, uint sm, uint offset, uint pin_ser,
+static inline void fj_fire_program_init(PIO pio, uint sm, uint offset, uint pin_ser0,
                                         uint pin_srclk, uint pin_set_base, float clkdiv) {
     pio_sm_config c = fj_fire_program_get_default_config(offset);
-    sm_config_set_out_pins(&c, pin_ser, 1);
+    sm_config_set_out_pins(&c, pin_ser0, 4);
     sm_config_set_sideset_pins(&c, pin_srclk);
     sm_config_set_set_pins(&c, pin_set_base, 2);
     sm_config_set_out_shift(&c, false, false, 32);   // MSB first, manual pull
     sm_config_set_in_shift(&c, false, false, 32);
     sm_config_set_clkdiv(&c, clkdiv);
-    pio_gpio_init(pio, pin_ser);
-    pio_gpio_init(pio, pin_srclk);
-    pio_gpio_init(pio, pin_set_base);
-    pio_gpio_init(pio, pin_set_base + 1);
-    pio_sm_set_pins_with_mask(pio, sm, 0, (1u << pin_ser) | (1u << pin_srclk) | (3u << pin_set_base));
-    pio_sm_set_pindirs_with_mask(pio, sm, ~0u, (1u << pin_ser) | (1u << pin_srclk) | (3u << pin_set_base));
+    uint32_t mask = (0xFu << pin_ser0) | (1u << pin_srclk) | (3u << pin_set_base);
+    for (uint i = 0; i < 32; i++) if (mask & (1u << i)) pio_gpio_init(pio, i);
+    pio_sm_set_pins_with_mask(pio, sm, 0, mask);
+    pio_sm_set_pindirs_with_mask(pio, sm, mask, mask);
     pio_sm_init(pio, sm, offset, &c);
     pio_sm_set_enabled(pio, sm, true);
 }

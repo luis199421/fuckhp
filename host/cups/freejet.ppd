@@ -12,7 +12,7 @@
 *1284DeviceID: "MFG:FreeJet;MDL:FJ-1;CMD:FJRASTER;CLS:PRINTER;"
 *PSVersion: "(3010.000) 0"
 *LanguageLevel: "3"
-*ColorDevice: False
+*ColorDevice: True
 *DefaultColorSpace: Gray
 *FileSystem: False
 *Throughput: "1"
@@ -64,8 +64,33 @@
 *OpenUI *Resolution/Resolution: PickOne
 *OrderDependency: 20 AnySetup *Resolution
 *DefaultResolution: 600dpi
-*Resolution 600dpi/600 dpi: "<</HWResolution[600 600]/cupsBitsPerColor 8/cupsRowCount 0/cupsRowFeed 0/cupsRowStep 0/cupsColorSpace 18>>setpagedevice"
+*Resolution 600dpi/600 dpi: "<</HWResolution[600 600]/cupsRowCount 0/cupsRowFeed 0/cupsRowStep 0>>setpagedevice"
 *CloseUI: *Resolution
+
+*OpenUI *ColorModel/Color Mode: PickOne
+*OrderDependency: 15 AnySetup *ColorModel
+*DefaultColorModel: Gray
+*ColorModel Gray/Grayscale: "<</cupsColorOrder 0/cupsColorSpace 18/cupsBitsPerColor 8>>setpagedevice"
+*ColorModel RGB/Color: "<</cupsColorOrder 0/cupsColorSpace 19/cupsBitsPerColor 8>>setpagedevice"
+*CloseUI: *ColorModel
+
+*OpenUI *FJInkSet/Cartridges fitted: PickOne
+*OrderDependency: 30 AnySetup *FJInkSet
+*DefaultFJInkSet: K
+*FJInkSet K/1 cartridge - Black: ""
+*FJInkSet KLK/2 cartridges - Black + Light black (grayscale): ""
+*FJInkSet CMY/3 cartridges - Cyan, Magenta, Yellow: ""
+*FJInkSet CMYK/4 cartridges - Black, Cyan, Magenta, Yellow: ""
+*CloseUI: *FJInkSet
+
+*OpenUI *FJGamma/Tone (darkness): PickOne
+*OrderDependency: 30 AnySetup *FJGamma
+*DefaultFJGamma: 1.0
+*FJGamma 0.8/Darker: ""
+*FJGamma 1.0/Normal: ""
+*FJGamma 1.25/Lighter: ""
+*FJGamma 1.5/Much lighter: ""
+*CloseUI: *FJGamma
 
 *OpenUI *FJMediaSource/Paper Source: PickOne
 *OrderDependency: 30 AnySetup *FJMediaSource

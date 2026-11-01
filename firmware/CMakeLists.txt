@@ -36,6 +36,6 @@ target_link_libraries(freejet
 
 # run entirely from RAM: no flash-cache jitter in the timing-critical code
 pico_set_binary_type(freejet copy_to_ram)
-pico_enable_stdio_uart(freejet 1)
+pico_enable_stdio_uart(freejet 0)   # GP0/GP1 select the TSR multiplexer
 pico_enable_stdio_usb(freejet 0)
 pico_add_extra_outputs(freejet)

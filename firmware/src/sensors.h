@@ -4,7 +4,7 @@
 
 void sensors_init(void);
 void sensors_task(void);          // call often; debounces switches
-uint16_t sensors_tsr_raw(void);   // 0..4095
+uint16_t sensors_tsr_raw(int head);   // 0..4095, via the TSR multiplexer
 uint16_t sensors_vhd_mv(void);
 bool sensors_head_present(void);
 bool sensors_paper(void);         // debounced

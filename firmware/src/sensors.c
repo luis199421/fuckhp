@@ -9,8 +9,11 @@ static bool paper_state, btn_state, btn_edge;
 static uint32_t paper_since, btn_since;
 static int led_mode;
 
+static uint8_t tsr_sel = 0xFF;
+
 void sensors_init(void) {
     adc_init();
+    for (uint p = PIN_TSR_SEL0; p <= PIN_TSR_SEL1; p++) { gpio_init(p); gpio_set_dir(p, GPIO_OUT); gpio_put(p, 0); }
     adc_gpio_init(PIN_ADC_TSR);
     adc_gpio_init(PIN_ADC_VHD);
     gpio_init(PIN_BUTTON_N);
@@ -30,12 +33,23 @@ static uint16_t adc_avg(uint ch) {
     return (uint16_t)(s / 16);
 }
 
-uint16_t sensors_tsr_raw(void) { return adc_avg(ADC_CH_TSR); }
+uint16_t sensors_tsr_raw(int head) {
+    if (head != tsr_sel) {            // 74HC4051: route that cartridge's TSR to the ADC
+        gpio_put(PIN_TSR_SEL0, head & 1);
+        gpio_put(PIN_TSR_SEL1, head >> 1 & 1);
+        tsr_sel = (uint8_t)head;
+        busy_wait_us_32(30);
+    }
+    return adc_avg(ADC_CH_TSR);
+}
 uint16_t sensors_vhd_mv(void) { return (uint16_t)(adc_avg(ADC_CH_VHD) * 3300.0f / 4095.0f * VHD_DIVIDER); }
 
-bool sensors_head_present(void) {
-    uint16_t t = sensors_tsr_raw();
-    return t >= PRM(TSR_MIN) && t <= PRM(TSR_MAX);
+bool sensors_head_present(void) {     // every fitted cartridge must be there
+    for (int h = 0; h < PRM(N_HEADS); h++) {
+        uint16_t t = sensors_tsr_raw(h);
+        if (t < PRM(TSR_MIN) || t > PRM(TSR_MAX)) return false;
+    }
+    return true;
 }
 
 void sensors_task(void) {

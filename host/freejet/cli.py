@@ -13,7 +13,8 @@ from .raster import PageSetup, load_pages, parse_ranges
 
 def _setup(a) -> PageSetup:
     return PageSetup(paper=a.paper, roll_width_mm=a.roll_width, roll_length_mm=a.length,
-                     margin_mm=a.margin, fit=not a.actual_size, dither=a.dither)
+                     margin_mm=a.margin, fit=not a.actual_size, dither=a.dither,
+                     inkset=a.inks, gamma=a.gamma)
 
 
 def _pages(a):
@@ -35,7 +36,8 @@ def _frames(a, pages, info=None):
     if info:
         kw = dict(max_cols=info["max_cols"], ring_bytes=info["ring_bytes"])
     return job_frames(pages, bidirectional=not a.unidirectional, roll=a.paper == "roll",
-                      cut_pause=a.paper == "roll" and not a.no_cut_pause, **kw)
+                      cut_pause=a.paper == "roll" and not a.no_cut_pause,
+                      inkset=getattr(a, "inks", "K"), **kw)
 
 
 def _progress(e):
@@ -66,16 +68,37 @@ def cmd_print(a):
 def _preview(a, pages, out):
     from PIL import Image
 
+    from .color import INKSETS
     from .emulator import VirtualPrinter
     vp = VirtualPrinter()
+    vp.n_heads = len(INKSETS[getattr(a, "inks", "K")])
     for fr in _frames(a, pages):
         vp.write(fr)
     if vp.errors:
         sys.exit("printer would reject this job: " + "; ".join(vp.errors))
     for i, page in enumerate(vp.pages, 1):
         name = out if len(vp.pages) == 1 else out.replace(".png", f"-{i}.png")
-        Image.fromarray(~page).convert("1").save(name, dpi=(600, 600))
-        print(f"wrote {name}  ({page.shape[1]}x{page.shape[0]} px)")
+        composite(page, getattr(a, "inks", "K")).save(name, dpi=(600, 600))
+        print(f"wrote {name}  ({page.shape[-1]}x{page.shape[-2]} px)")
+
+
+# approximate on-paper colour of each ink (RGB 0..1), used to simulate prints
+INK_RGB = {"K": (0.08, 0.08, 0.1), "LK": (0.62, 0.62, 0.64), "C": (0.0, 0.62, 0.87),
+           "M": (0.85, 0.05, 0.5), "Y": (1.0, 0.92, 0.0)}
+
+
+def composite(page, inkset="K"):
+    """Simulate the printed page: multiply each ink's colour where it has drops."""
+    from PIL import Image
+
+    from .color import INKSETS
+    planes = page[None] if page.ndim == 2 else page
+    if len(planes) == 1:
+        return Image.fromarray(~planes[0]).convert("1")
+    rgb = np.ones(planes.shape[1:] + (3,), np.float32)
+    for ink, pl in zip(INKSETS[inkset], planes):
+        rgb[pl] *= np.array(INK_RGB[ink], np.float32)
+    return Image.fromarray((rgb * 255).astype(np.uint8), "RGB")
 
 
 def cmd_preview(a):
@@ -140,36 +163,55 @@ def cmd_maint(a):
 
 def cmd_test(a):
     from . import testpages as T
-    if a.which == "nozzles":
-        page = T.nozzle_check()
-    elif a.which == "rows":
-        down = 1
-        if not a.dry_run:
-            with _open(a) as pr:
-                down = pr.get_param(BY_NAME["nozzle0_downstream"].id)
-        rows = np.arange(P.ROWS)
-        nozzle = rows if down else (P.ROWS - 1 - rows)
-        page = T.alignment_page(nozzle % 2 == 1)
-    elif a.which == "bidir":
-        page, _ = T.bidir_page()
+    from .color import INKSETS
+    n = len(INKSETS[a.inks])
+    if a.which == "nozzles":     # one nozzle-check band per cartridge
+        one = T.nozzle_check()
+        page = np.zeros((n, n * (one.shape[0] + 60), one.shape[1]), bool)
+        for s in range(n):
+            page[s, s * (one.shape[0] + 60):s * (one.shape[0] + 60) + one.shape[0]] = one
+    elif a.which == "heads":
+        if n < 2:
+            sys.exit("head alignment needs --inks KLK, CMY or CMYK")
+        page = T.heads_page(n)
     else:
-        page = T.feed_page()
+        if a.which == "rows":
+            down = 1
+            if not a.dry_run:
+                with _open(a) as pr:
+                    down = pr.get_param(BY_NAME["nozzle0_downstream"].id)
+            rows = np.arange(P.ROWS)
+            nozzle = rows if down else (P.ROWS - 1 - rows)
+            mono = T.alignment_page(nozzle % 2 == 1)
+        elif a.which == "bidir":
+            mono, _ = T.bidir_page()
+        else:
+            mono = T.feed_page()
+        page = np.zeros((n,) + mono.shape, bool)
+        page[0] = mono                   # row / bidir / feed tests use slot 0 only
     a.files, a.copies = [], 1
     a.paper = "letter" if a.paper == "roll" else a.paper
     w = round(215.9 / 25.4 * 600) if a.paper == "letter" else round(210 / 25.4 * 600)
-    full = np.zeros((page.shape[0] + 240, w), bool)
     m = 120
-    full[m:m + page.shape[0], m:m + page.shape[1]] = page[:, :w - m]
-    if a.which != "bidir":
+    full = np.zeros((n, page.shape[1] + 2 * m, w), bool)
+    full[:, m:m + page.shape[1], m:m + page.shape[2]] = page[:, :, :w - m]
+    if a.which not in ("bidir",):
         a.unidirectional = True
+    out = full[0] if n == 1 else full
     if a.dry_run:
-        return _preview(a, [full], a.dry_run)
+        return _preview(a, [out], a.dry_run)
     with _open(a) as pr:
-        pr.stream(_frames(a, [full], pr.info()), _progress)
+        pr.stream(_frames(a, [out], pr.info()), _progress)
 
 
 def cmd_calibrate(a):
     um = P.UM_PER_COL
+    if a.what in ("head-x", "head-y"):
+        if len(a.args) != 2:
+            sys.exit("usage: freejet calibrate head-x|head-y SLOT K")
+        a.slot, a.value = int(a.args[0]), a.args[1]
+    else:
+        a.slot, a.value = None, a.args[0]
     with _open(a) as pr:
         if a.what == "rows":
             # the test shifted the odd column's data by k: the real gap is k columns smaller
@@ -181,6 +223,17 @@ def cmd_calibrate(a):
             pid = BY_NAME["bidir_offset_um"].id
             old = pr.get_param(pid)
             new = round(old + a.value * um)
+        elif a.what in ("head-x", "head-y"):
+            if not a.slot or not 1 <= a.slot <= 3:
+                sys.exit("give the slot (1-3), e.g.  freejet calibrate head-x 2 -1")
+            if a.what == "head-x":   # slot s data was shifted k columns: it really sits -k further
+                pid = BY_NAME[f"head{a.slot}_x_um"].id
+                old = pr.get_param(pid)
+                new = round(old - a.value * um)
+            else:                    # shifted k rows: move its data k rows with spare nozzles
+                pid = BY_NAME[f"head{a.slot}_dy_rows"].id
+                old = pr.get_param(pid)
+                new = round(old + a.value)
         else:  # feed: value = measured mm over the 250 mm test
             pid = BY_NAME["y_steps_per_m"].id
             old = pr.get_param(pid)
@@ -202,6 +255,11 @@ def build_parser():
         p.add_argument("--margin", type=float, default=3.0, help="margins in mm")
         p.add_argument("--actual-size", action="store_true", help="don't scale to fit")
         p.add_argument("--dither", default="auto", choices=["auto", "fs", "threshold", "ordered"])
+        p.add_argument("--inks", default="K", choices=["K", "KLK", "CMY", "CMYK"],
+                       help="cartridges fitted, left to right: K = black only, KLK = black + light "
+                            "black (grayscale), CMY / CMYK = colour (must match param n_heads)")
+        p.add_argument("--gamma", type=float, default=1.0,
+                       help="tone curve: >1 lightens mid-tones if photos print too dark")
         p.add_argument("--unidirectional", action="store_true",
                        help="print left-to-right only (slower, best alignment)")
         p.add_argument("--no-cut-pause", action="store_true", help="roll: don't stop for cutting")
@@ -230,14 +288,15 @@ def build_parser():
     p.set_defaults(func=cmd_param)
 
     p = sub.add_parser("test", help="print a calibration page")
-    p.add_argument("which", choices=["nozzles", "rows", "bidir", "feed"])
+    p.add_argument("which", choices=["nozzles", "rows", "bidir", "feed", "heads"])
     page_opts(p)
     p.add_argument("--dry-run", metavar="OUT.png")
     p.set_defaults(func=cmd_test)
 
     p = sub.add_parser("calibrate", help="apply a calibration result and save it")
-    p.add_argument("what", choices=["rows", "bidir", "feed"])
-    p.add_argument("value", type=float, help="block number from the test page, or measured mm")
+    p.add_argument("what", choices=["rows", "bidir", "feed", "head-x", "head-y"])
+    p.add_argument("args", nargs="+", type=float,
+                   help="block number from the test page, or measured mm; head-x/head-y: SLOT K")
     p.set_defaults(func=cmd_calibrate)
 
     for name, hlp in [("home", "home the carriage"), ("park", "park + cap the cartridge"),
