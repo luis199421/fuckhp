@@ -1,16 +1,23 @@
-# Export every printable part to stl/ :   make -j8
+# Export every printable part:
+#   make -j8                 1 cartridge (black)             -> stl/
+#   make -j8 N_HEADS=2       black + light black (grayscale) -> stl-2heads/
+#   make -j8 N_HEADS=4       black + cyan + magenta + yellow -> stl-4heads/   (N_HEADS=3: CMY)
 # Needs OpenSCAD 2021.01 or newer.
 OPENSCAD ?= openscad
 S = parts
+N_HEADS ?= 1
+OUT := $(if $(filter 1,$(N_HEADS)),stl,stl-$(N_HEADS)heads)
+# same arithmetic as fj.scad: number of platen segments and tray pieces
+GEOM := $(shell python3 -c "import math;n=$(N_HEADS);s=(n-1)*28;w=360+2*s;e=(70+s+88) if 70+s+88<=160 else 70+s-10;print(1+math.ceil((w-e)/130), math.ceil(w/190))")
+PLATEN_SEGS := $(word 1,$(GEOM))
+TRAY_PIECES := $(word 2,$(GEOM))
 
 PARTS = \
   side_plate_left:side_plate.scad:RIGHT=false \
   side_plate_right:side_plate.scad:RIGHT=true \
   carriage:carriage.scad: \
   carriage_pad:carriage_pad.scad: \
-  platen_1:platen.scad:SEG=0 \
-  platen_2:platen.scad:SEG=1 \
-  platen_3:platen.scad:SEG=2 \
+  $(foreach i,$(shell seq 1 $(PLATEN_SEGS)),platen_$(i):platen.scad:SEG=$(shell echo $$(($(i)-1)))) \
   roller_hub:roller_hub.scad: \
   roller_tire_TPU:roller_tire.scad: \
   star_wheel:star_wheel.scad: \
@@ -21,8 +28,7 @@ PARTS = \
   service_station_sled:service_station.scad:PART="sled" \
   sensor_bracket:sensor_bracket.scad: \
   electronics_tray:electronics_tray.scad: \
-  paper_tray_left:paper_tray.scad:PART="left" \
-  paper_tray_right:paper_tray.scad:PART="right" \
+  $(foreach i,$(shell seq 1 $(TRAY_PIECES)),paper_tray_$(i):paper_tray.scad:PIECE=$(shell echo $$(($(i)-1)))) \
   paper_guide:paper_tray.scad:PART="guide" \
   tray_bracket:paper_tray.scad:PART="bracket" \
   service_cap_TPU:service_station.scad:PART="cap" \
@@ -35,17 +41,17 @@ PARTS = \
 pname = $(word 1,$(subst :, ,$1))
 pfile = $(word 2,$(subst :, ,$1))
 pdef  = $(word 3,$(subst :, ,$1))
-STLS = $(foreach p,$(PARTS),stl/$(call pname,$p).stl)
+STLS = $(foreach p,$(PARTS),$(OUT)/$(call pname,$p).stl)
 
 all: $(STLS)
 
 define rule
-stl/$(call pname,$1).stl: $(S)/$(call pfile,$1) fj.scad
-	@mkdir -p stl
-	$(OPENSCAD) $(if $(call pdef,$1),-D '$(call pdef,$1)') -o $$@ $$<
+$(OUT)/$(call pname,$1).stl: $(S)/$(call pfile,$1) fj.scad
+	@mkdir -p $(OUT)
+	$(OPENSCAD) -D N_HEADS=$(N_HEADS) $(if $(call pdef,$1),-D '$(call pdef,$1)') -o $$@ $$<
 endef
 $(foreach p,$(PARTS),$(eval $(call rule,$p)))
 
 clean:
-	rm -rf stl
+	rm -rf stl stl-*heads
 .PHONY: all clean

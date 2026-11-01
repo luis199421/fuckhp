@@ -22,11 +22,11 @@ module rod(y, z, x0=-20, l=rod_len) { color("silver") translate([x0, y, z]) rota
 
 module static_parts() {
     color("SteelBlue") { translate([-plate_t, 0, 0]) side_plate(false); translate([inner_w, 0, 0]) side_plate(true); }
-    color("Gainsboro") for (s=[0:2]) platen(s);
+    color("Gainsboro") for (s=[0:platen_segs-1]) platen(s);
     color("OrangeRed") { service_base(); service_sled(); }
     color("DimGray") { x_motor_bracket(); x_idler_bracket(); sensor_bracket(); }
     color("DarkSlateGray") electronics_tray();
-    color("Wheat") { paper_tray("left"); paper_tray("right"); }
+    color("Wheat") { paper_tray("tray"); }
 }
 
 module rollers() {
@@ -54,8 +54,10 @@ module motors() {
     }
 }
 
-module cartridge() {
-    color("#222") translate([-cart_w/2, -nz_back, head_gap]) cube([cart_w, cart_d, cart_h]);
+INK_COLORS = N_HEADS == 4 ? ["#202020", "#00a0dc", "#d8007f", "#f5d800"] :
+             N_HEADS == 3 ? ["#00a0dc", "#d8007f", "#f5d800"] : ["#202020", "#9a9a9a"];
+module cartridge() for (i=[0:N_HEADS-1]) translate([slot_x(i), 0, 0]) {
+    color(INK_COLORS[i]) translate([-cart_w/2, -nz_back, head_gap]) cube([cart_w, cart_d, cart_h]);
     color("green") translate([-pcb_w/2, -nz_back - pcb_t, carr_z0]) cube([pcb_w, pcb_t, pcb_h]);
 }
 

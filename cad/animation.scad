@@ -32,8 +32,12 @@ module at(k, from=[0,0,150], delay=0) {
 
 module rod(y, z, x0=-20, l=rod_len) { color("silver") translate([x0, y, z]) rotate([0,90,0]) cylinder(d=rod_d, h=l); }
 module lm8uu() color("silver") rotate([0,90,0]) cylinder(d=lm8uu_d, h=lm8uu_l, center=true);
-module cartridge() color("#202020") translate([-cart_w/2, -nz_back, head_gap]) cube([cart_w, cart_d, cart_h]);
-module head_board() color("ForestGreen") translate([-pcb_w/2, -nz_back - pcb_t, carr_z0]) cube([pcb_w, pcb_t, pcb_h]);
+INK_COLORS = N_HEADS == 4 ? ["#202020", "#00a0dc", "#d8007f", "#f5d800"] :
+             N_HEADS == 3 ? ["#00a0dc", "#d8007f", "#f5d800"] : ["#202020", "#9a9a9a"];
+module cartridge() for (i=[0:N_HEADS-1])
+    color(INK_COLORS[i]) translate([slot_x(i) - cart_w/2, -nz_back, head_gap]) cube([cart_w, cart_d, cart_h]);
+module head_board() for (i=[0:N_HEADS-1])
+    color("ForestGreen") translate([slot_x(i) - pcb_w/2, -nz_back - pcb_t, carr_z0]) cube([pcb_w, pcb_t, pcb_h]);
 module belt_loop2d(circles, w=1.4) difference() {   // GT2 belt around pulleys (2D)
     offset(r=w/2) hull() for (c=circles) translate([c[0], c[1]]) circle(r=c[2]);
     offset(r=-w/2) hull() for (c=circles) translate([c[0], c[1]]) circle(r=c[2]);
@@ -68,7 +72,7 @@ for (b=[[-13.5, rail_hi_z, -1], [13.5, rail_hi_z, 1], [0, rail_lo_z, 1]])
 for (z=[rail_lo_z, rail_hi_z]) at(2, [-430, 0, 0], z == rail_hi_z ? 0.25 : 0) rod(rail_y, z);
 
 // 3  platen beam: three segments bolt together and to the plates
-for (s=[0:2]) at(3, [0, 0, 170], s * 0.25) color("Gainsboro") platen(s);
+for (s=[0:platen_segs-1]) at(3, [0, 0, 170], s * 0.2) color("Gainsboro") platen(s);
 
 // 4  drive shafts with rollers, then the 76T pulleys
 for (y=[in_y, out_y]) at(4, [440, 0, 0], y == out_y ? 0.25 : 0) {
@@ -117,7 +121,7 @@ at(11, [0, -60, 0]) translate([carr_x, 0, 0]) head_board();
 at(11, [0, 0, 160], 0.35) translate([carr_x, 0, 0]) cartridge();
 
 // 12 rear paper tray
-at(12, [0, -160, 0]) color("Wheat") { paper_tray("left"); paper_tray("right"); }
+at(12, [0, -160, 0]) color("Wheat") { paper_tray("tray"); }
 
 // 13 (camera move only: "ready")
 

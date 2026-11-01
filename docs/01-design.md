@@ -9,7 +9,7 @@ ideas and makes them buildable today at home, under the GPL.
 
 | | Openprinter (Crowd Supply page, Nov 2026) | FreeJet FJ-1 (this repo) |
 |---|---|---|
-| Ink | HP 63 (US) / HP 302 (EU), black and/or colour, refillable | **HP 45 (51645A)**, black, refillable |
+| Ink | HP 63 (US) / HP 302 (EU), black and/or colour, refillable | **HP 45 (51645A)**: 1 black, or 2 (black + light black) for smooth grayscale, or 3–4 refilled with C/M/Y(/K) for colour |
 | Why that cartridge | common consumer cartridges | the only HP head whose drive signals are publicly reverse-engineered and proven in open projects |
 | Resolution | 600 dpi B/W, 1200 dpi colour | 600 × 600 dpi |
 | Speed | TBD | ~1 text page/min (estimate) |
@@ -24,10 +24,11 @@ ideas and makes them buildable today at home, under the GPL.
 | Size | 50 × 10 × 11 cm | ≈ 42 × 33 × 15 cm with the tray |
 | Licence | CC BY-NC-SA 4.0 (non-commercial) | GPL-3.0 (commercial use allowed) |
 
-The main thing we can't match yet is colour: nobody has published how to
-drive HP 63/302 heads, and they carry ID chips. FreeJet's firmware keeps all
-printhead knowledge in one place (`compose.c`, `hp45_map.c`, the head board),
-so a second head type can be added later without touching the host side.
+Colour works differently: nobody has published how to drive HP 63/302 heads
+(and they carry ID chips), so FreeJet puts **up to four HP45-format cartridges
+side by side, each refilled with a different ink** (CMYK, or black + light
+black for smooth grayscale). Same head, same board, same firmware; the frame
+gets wider. See [`12-grayscale-and-color.md`](12-grayscale-and-color.md).
 
 ## Decisions, and why
 

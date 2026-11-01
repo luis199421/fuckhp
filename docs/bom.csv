@@ -36,3 +36,8 @@ electronics,1,Monostable,74HC123 SOIC-16,0.30,head board pulse limiter
 electronics,1,NAND gate,74HC00 SOIC-14,0.20,head board
 electronics,1,Head board passives,"2x 470 uF 25 V low-ESR, 4x 10 uF X7R, 13x 100 nF, 680 pF C0G, resistors",2.00,
 consumable,1,Ink cartridge,HP 45 / 51645A (OEM ~$25-30 or remanufactured ~$12-15),15.00,refill with a syringe
+colour option,per extra cartridge,Printhead board + parts,"same narrow head board, chips, passives, 16-way ribbon",9.00,"2 for grayscale (KLK), 4 for colour (CMYK)"
+colour option,1,Analog multiplexer,74HC4051 (DIP-16),0.30,routes each cartridge TSR to the ADC
+colour option,1,Longer rods and belt,6x 8 mm rods 500/600 mm instead of 400; GT2 open belt 1.5 m,5.00,extra over the black-only build
+colour option,per extra cartridge,HP45-format cartridge,new HP 45 (flushed) or empty refillable water-based TIJ 2.5 cartridge,12.00,
+colour option,1,Refill ink,"dye ink for HP thermal heads, C/M/Y(/K) 100 ml each; light black for KLK",12.00,not Epson/piezo or pigment inks

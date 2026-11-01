@@ -24,5 +24,6 @@ Nobody has built one yet. The first build is a prototype.
    application, and printing straight from a USB stick (as Openprinter plans).
 6. Optional sheet feeder (stack of 20–50 sheets).
 7. Optional automatic cutter for roll mode (Openprinter has one integrated).
-8. Second cartridge slot for colour, once a colour head is reverse-engineered.
+8. Grayscale/colour (done in software: 2–4 HP45-format cartridges with different inks, see
+   `12-grayscale-and-color.md`); needs real ink tests, especially home-mixed light black.
 9. Get a dedicated USB PID from pid.codes.

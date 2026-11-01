@@ -261,14 +261,26 @@ static int park(void) {
     return move_x(PRM(HOME_BACKOFF_UM), PRM(X_TRAVEL_SPEED_MM_S));   // cap engages here
 }
 
+static float head_x_um(int h) {      // slot h's nozzles, right of slot 0's
+    const int32_t x[FJ_MAX_PLANES] = {0, PRM(HEAD1_X_UM), PRM(HEAD2_X_UM), PRM(HEAD3_X_UM)};
+    return (float)x[h];
+}
+
+// nozzle: -1 = every nozzle of every cartridge, else head * 300 + n. Each cartridge in turn
+// is brought over the single spittoon cup.
 static int spit(int nozzle, uint32_t count) {
     if (!homed) { int e = home(); if (e) return e; }
     if (!head_powered()) return FJ_E_NO_VHD;
-    int e = move_x(PRM(SPIT_X_UM), PRM(X_TRAVEL_SPEED_MM_S));
-    if (e) return e;
-    head_start_spit(nozzle, count, 500);
-    while (head_busy()) { service(); if (abort_req) head_abort(); }
-    return head_result();
+    for (int h = 0; h < head_count(); h++) {
+        if (nozzle >= 0 && nozzle / HP45_NOZZLES != h) continue;
+        float x = PRM(SPIT_X_UM) - head_x_um(h);
+        int e = move_x(x < 0 ? 0 : x, PRM(X_TRAVEL_SPEED_MM_S));
+        if (e) return e;
+        head_start_spit(h, nozzle < 0 ? -1 : nozzle % HP45_NOZZLES, count, 500);
+        while (head_busy()) { service(); if (abort_req) head_abort(); }
+        if ((e = head_result())) return e;
+    }
+    return FJ_OK;
 }
 
 static int power_up_head(void) {
@@ -356,9 +368,8 @@ static int do_swath(op_t *o) {
     int heads = head_count();
     uint32_t starts[FJ_MAX_PLANES], acc = o->start;
     for (int h = 0; h < heads; h++) { starts[h] = acc; acc += o->plane_len[h]; }
-    const int32_t head_x_um[FJ_MAX_PLANES] = {0, PRM(HEAD1_X_UM), PRM(HEAD2_X_UM), PRM(HEAD3_X_UM)};
     int32_t head_off[FJ_MAX_PLANES];
-    for (int h = 0; h < FJ_MAX_PLANES; h++) head_off[h] = (int32_t)lroundf(head_x_um[h] / FJ_UM_PER_COL);
+    for (int h = 0; h < FJ_MAX_PLANES; h++) head_off[h] = (int32_t)lroundf(head_x_um(h) / FJ_UM_PER_COL);
     fj_pass_setup(&pass, head_tables(), &ring, starts, o->plane_len, s->flags & FJ_SWATH_PACKBITS, heads,
                   s->x0, s->ncols, s->dir, head_off, off_odd);
     // never go faster than the head can fire a full column

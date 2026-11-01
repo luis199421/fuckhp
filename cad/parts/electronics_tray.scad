@@ -2,9 +2,9 @@
 // board (90 x 70 mm perfboard, long side along X: Pico 2 + 2x TMC2209 + buck converter + head power switch).
 // USB and the 12 V barrel jack come out at the back. Print as modelled, PETG.
 include <../fj.scad>
-tx0 = 150; tw = 110;          // X position / width (sits between the motors)
+tx0 = etray_x0; tw = 110;     // X position / width (sits between the motors)
 module electronics_tray() {
-tray_x = [175, 245];                      // must match the holes in platen segment 1
+tray_x = etray_bolts;                     // match the holes in the platen webs
 ty0 = web_y[0] - 8; ty1 = web_y[2] + 12;
 tz0 = -58; tz1 = web_z0;
 difference() {

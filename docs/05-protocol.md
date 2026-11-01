@@ -38,9 +38,9 @@ The printer acknowledges every frame except `SWATH_DATA` with an `ACK`
 |---|---|---|---|
 | 0x01 | HELLO | – | → INFO |
 | 0x02 | GET_STATUS | – | → STATUS |
-| 0x10 | JOB_BEGIN | u8 flags (bit0 = roll), 3 pad | homes, checks the cartridge, powers the head |
+| 0x10 | JOB_BEGIN | u8 flags (bit0 = roll), u8 planes (0/1 = one cartridge), u8 ink set (0 K, 1 KLK, 2 CMY, 3 CMYK), u8 pad | homes, checks the cartridges, powers the heads; planes must equal param `n_heads` |
 | 0x11 | PAGE_BEGIN | u32 page_length_um (roll), u32 flags | spits, then loads a sheet (waits for the user) |
-| 0x12 | SWATH_BEGIN | i32 y_um, i16 x0, u16 ncols, u8 dir, u8 flags (bit0 PackBits), u16 pad, u32 data_len | one pass |
+| 0x12 | SWATH_BEGIN | i32 y_um, i16 x0, u16 ncols, u8 dir, u8 flags (bit0 PackBits), u16 pad, u32 data_len; with planes > 1 then u32 plane_len[planes] | one pass |
 | 0x13 | SWATH_DATA | bytes | chunks of the pass data until data_len is reached |
 | 0x14 | PAGE_END | u8 flags (bit0 = pause for cutting) | ejects (sheet) / feeds to the tear edge (roll) |
 | 0x15 | JOB_END | – | parks + caps, head power off |
@@ -69,6 +69,10 @@ The printer acknowledges every frame except `SWATH_DATA` with an `ACK`
 * Data = for each column **in the order the carriage meets them**, 38 bytes:
   row *r* is bit *r % 8* (LSB first) of byte *r / 8*. Then PackBits-compressed
   if flags bit 0 is set.
+* With several cartridges, each plane (one per cartridge, slot order) is
+  compressed on its own and the planes follow each other; `plane_len` gives
+  their sizes. Passes are then 288 rows tall (rows 288–299 empty): the
+  firmware uses the 12 spare nozzles to line the cartridges up vertically.
 
 ## Printer → host
 
@@ -88,7 +92,7 @@ Events: 1 paper needed, 2 paper loaded, 3 page done (value = page count),
 4 job done, 5 error (arg = error code), 6 cut now, 7 head hot (pausing),
 8 aborted.
 
-Error codes: see `ERRORS` in `protocol.py` (1 bad CRC … 21 too fast). After
+Error codes: see `ERRORS` in `protocol.py` (1 bad CRC … 22 ink set doesn't match the cartridges). After
 an error the printer rejects the rest of that job's frames until the next
 `JOB_BEGIN` or `ABORT`.
 

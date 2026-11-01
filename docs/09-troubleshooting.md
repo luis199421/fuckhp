@@ -17,3 +17,7 @@
 | Skewed print | Sheet not along the left guide; pinch pressure unequal left/right. |
 | Ink dries in the nozzles between jobs | Cap not sealing: print the cap in softer TPU (85A), check the sled lifts it, `home_backoff_um` (park position). |
 | Firmware reboots during printing | Power: the 12 V brick dips when the head fires; check the head board's 470 µF caps and GND wiring. |
+| "ink set doesn't match the cartridges" | The job's `--inks` / *Cartridges fitted* option and the printer's `n_heads` differ: run `freejet setup --inks …` or fix the print option. |
+| Colour fringes around black text or lines | Cartridges not lined up: `freejet test heads` + `calibrate head-x/head-y`. |
+| Colours wrong / swapped | Cartridges in the wrong slots: slot 0 is the left-most; CMYK order is K, C, M, Y. |
+| Colour prints too dark or muddy | Try `--gamma 1.25`; use coated inkjet paper; check no slot still has black residue from flushing. |

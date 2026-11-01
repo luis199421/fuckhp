@@ -28,7 +28,7 @@ Same as [`firmware/src/config.h`](../firmware/src/config.h).
 
 | GPIO | Signal | Connects to |
 |---|---|---|
-| GP0 / GP1 | UART0 TX / RX | debug console (115200 baud), optional |
+| GP0 / GP1 | TSR_SEL0 / 1 | 74HC4051 select inputs A/B (C to GND); only with 2+ cartridges |
 | GP2 | X_STEP | TMC2209 #1 STEP |
 | GP3 | X_DIR | TMC2209 #1 DIR |
 | GP4 | Y_STEP | TMC2209 #2 STEP |
@@ -43,14 +43,19 @@ Same as [`firmware/src/config.h`](../firmware/src/config.h).
 | GP13 | A_SER | ribbon 13 (via 47 Ω) |
 | GP14 | A_SRCLK | ribbon 12 (via 47 Ω) |
 | GP15 | A_RCLK | ribbon 14 (via 47 Ω) |
-| GP16 | P_SER | ribbon 9 (via 47 Ω) |
-| GP17 | P_SRCLK | ribbon 7 (via 47 Ω) |
-| GP18 | P_RCLK | ribbon 10 (via 47 Ω) |
-| GP19 | FIRE | ribbon 11 (via 47 Ω) |
-| GP26 / ADC0 | TSR | ribbon 16; 1 kΩ pull-up to 3V3; 100 nF to GND |
+| GP16 | P_SER0 | slot 0 ribbon pin 9 (via 47 Ω) |
+| GP17–GP19 | P_SER1–3 | slot 1–3 ribbon pin 9 (colour / grayscale builds only) |
+| GP20 | P_SRCLK | ribbon 7, all slots (via 47 Ω) |
+| GP21 | P_RCLK | ribbon 10, all slots (via 47 Ω) |
+| GP22 | FIRE | ribbon 11, all slots (via 47 Ω) |
+| GP26 / ADC0 | TSR | slot 0 ribbon pin 16, or the 74HC4051 output with 2+ cartridges; 1 kΩ pull-up to 3V3 on each slot's TSR line; 100 nF to GND |
 | GP27 / ADC1 | VHD sense | 100 kΩ from VHD, 15 kΩ to GND, 100 nF to GND |
 
-The 47 Ω series resistors damp ringing on the ribbon. The Pico's 3.3 V
+The 47 Ω series resistors damp ringing on the ribbon. With 2–4 cartridges
+there is one 2×8 header per slot: all pins are wired in parallel except pin 9
+(`P_SER`, one GPIO per slot) and pin 16 (TSR, one multiplexer input per slot),
+see [`12-grayscale-and-color.md`](12-grayscale-and-color.md). With one
+cartridge, leave GP17–19 and the multiplexer out. The Pico's 3.3 V
 outputs drive the 74**HCT** chips on the head board directly (HCT inputs
 switch at 2 V even though they run at 5 V).
 

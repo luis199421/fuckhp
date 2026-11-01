@@ -173,10 +173,9 @@ void head_start_pass(fj_pass_t *p) {
     multicore_fifo_push_blocking(CMD_PASS);
 }
 
-void head_start_spit(int nozzle, uint32_t count, uint32_t period_us) {
-    // nozzle: -1 = every nozzle of every cartridge, else head * 300 + nozzle
-    spit_head = nozzle < 0 ? -1 : nozzle / HP45_NOZZLES;
-    spit_nozzle = nozzle < 0 ? -1 : nozzle % HP45_NOZZLES;
+void head_start_spit(int head, int nozzle, uint32_t count, uint32_t period_us) {
+    spit_head = head;                 // -1 = every cartridge
+    spit_nozzle = nozzle;             // -1 = every nozzle
     spit_count = count;
     spit_period_us = period_us;
     abort_req = false;

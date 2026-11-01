@@ -12,7 +12,7 @@
     X(  7, Y_ACCEL_MM_S2         ,      400,       50,     5000) \
     X(  8, X_DIR_INVERT          ,        0,        0,        1) \
     X(  9, Y_DIR_INVERT          ,        0,        0,        1) \
-    X( 10, X_TRAVEL_UM           ,   300000,    50000,   600000) \
+    X( 10, X_TRAVEL_UM           ,   300000,    50000,   800000) \
     X( 11, HOME_SPEED_MM_S       ,       25,        2,      100) \
     X( 12, HOME_BACKOFF_UM       ,     3000,        0,    20000) \
     X( 20, COL0_X_UM             ,    40000,        0,   600000) \
@@ -21,7 +21,7 @@
     X( 23, NOZZLE0_DOWNSTREAM    ,        1,        0,        1) \
     X( 24, SENSOR_TO_NOZZLE_UM   ,    60000,        0,   300000) \
     X( 25, EJECT_UM              ,   120000,        0,   500000) \
-    X( 26, SPIT_X_UM             ,    20000,        0,   200000) \
+    X( 26, SPIT_X_UM             ,    32000,        0,   300000) \
     X( 27, MAX_COLS              ,     5184,      100,     7000) \
     X( 28, CUTTER_UM             ,    78000,        0,   200000) \
     X( 40, PULSE_NS              ,     1800,      500,     2400) \

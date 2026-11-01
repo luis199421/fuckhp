@@ -13,7 +13,7 @@ real CAD files with `python3 tools/render_animation.py`.*
 
 | | |
 |---|---|
-| Prints | black, 600 × 600 dpi, text, line art and halftoned images |
+| Prints | 600 × 600 dpi: black (1 cartridge), smooth grayscale (2: black + light black) or colour (4: CMYK, refilled HP45s); [how](docs/12-grayscale-and-color.md) |
 | Paper | Letter / A4 / Legal / A5 sheets through a straight rear slot, or rolls up to 220 mm |
 | Ink | HP 45 (51645A), ~900 pages, refill with a syringe |
 | Connection | USB; no kernel driver to install on Linux, macOS or Windows |
@@ -71,8 +71,9 @@ real CAD files with `python3 tools/render_animation.py`.*
 5. [Firmware](docs/07-firmware.md)
 6. [Driver and printing](docs/06-host-driver.md)
 7. [First power-on and calibration](docs/08-calibration.md)
-8. Optional: [share the printer over Wi-Fi](docs/11-print-server.md) (no extra hardware)
-9. [Troubleshooting](docs/09-troubleshooting.md) · [USB protocol](docs/05-protocol.md) · [Roadmap](docs/10-roadmap.md)
+8. Optional: [grayscale and colour](docs/12-grayscale-and-color.md) with 2–4 cartridges
+9. Optional: [share the printer over Wi-Fi](docs/11-print-server.md) (no extra hardware)
+10. [Troubleshooting](docs/09-troubleshooting.md) · [USB protocol](docs/05-protocol.md) · [Roadmap](docs/10-roadmap.md)
 
 ## Quick start (once built)
 

@@ -33,5 +33,6 @@ jobs:
       - uses: actions/checkout@v4
       - run: sudo apt-get update && sudo apt-get install -y openscad
       - run: make -C cad -j4 -B
+      - run: make -C cad -j4 -B N_HEADS=4
       - uses: actions/upload-artifact@v4
-        with: { name: freejet-stl, path: cad/stl }
+        with: { name: freejet-stl, path: "cad/stl*" }

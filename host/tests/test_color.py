@@ -68,3 +68,15 @@ def test_inkset_mismatch_is_refused():
     for fr in job_frames([page], inkset="CMYK"):
         vp.write(fr)
     assert any("ink set" in e for e in vp.errors)
+
+
+def test_standard_geometry_matches_cad():
+    import re
+    from pathlib import Path
+    from freejet.cli import standard_geometry
+    fj = (Path(__file__).resolve().parents[2] / "cad" / "fj.scad").read_text()
+    assert re.search(r"head_pitch = 28;", fj) and "paper_x0  = 70 + head_span" in fj
+    assert "spit_x    = 62 + head_span" in fj and "home_x    = 30;" in fj
+    g1, g4 = standard_geometry("K"), standard_geometry("CMYK")
+    assert g1["col0_x_um"] == (70 - 30) * 1000 and g1["spit_x_um"] == (62 - 30) * 1000
+    assert g4["col0_x_um"] - g1["col0_x_um"] == 84000 and g4["n_heads"] == 4

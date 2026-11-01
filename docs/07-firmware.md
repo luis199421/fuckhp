@@ -26,8 +26,8 @@ Hold BOOTSEL while plugging in the Pico 2 and copy
 | `comm.c`, `usb_descriptors.c`, `tusb_config.h` | TinyUSB CDC, back-pressure, frame I/O |
 | `frame.c` | frame parser/encoder with CRC and re-sync (portable) |
 | `ring.c`, `packbits.c` | 256 KiB pass-data ring, streaming PackBits decoder (portable) |
-| `compose.c`, `hp45_map.c` | pixel columns → HP45 fire words, two nozzle rows with their own cursors (portable) |
-| `head.c`, `fire.pio` | core 1 fire loop, address chain, PIO primitive shifter + pulse |
+| `compose.c`, `hp45_map.c` | pixel columns → HP45 fire words for 1–4 cartridges, each nozzle column with its own cursor and X/Y offset (portable) |
+| `head.c`, `fire.pio` | core 1 fire loop, address chain, PIO shifter for up to 4 cartridges in parallel + pulse |
 | `motion.c` | 50 kHz stepper interrupt with trapezoid moves, sensor stops, column triggers |
 | `sensors.c` | ADC (TSR, VHD), switches, button, LED |
 | `params.c`, `params_table.h` | parameters, stored in the last flash sector |

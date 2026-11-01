@@ -3,6 +3,16 @@
 Do the electronics bring-up in [`03-electronics.md`](03-electronics.md)
 first (it checks the pulse width **before** a cartridge is connected).
 
+## 0. Grayscale / colour builds only
+
+```bash
+freejet setup --inks CMYK     # or KLK / CMY: cartridge count + frame geometry
+```
+
+Then add `--inks CMYK` to every `freejet test …` below, and after step 3 line
+the cartridges up with `freejet test heads` (see
+[`12-grayscale-and-color.md`](12-grayscale-and-color.md#lining-the-cartridges-up)).
+
 ## 1. Motion
 
 ```bash

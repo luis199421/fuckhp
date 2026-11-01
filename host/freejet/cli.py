@@ -204,6 +204,31 @@ def cmd_test(a):
         pr.stream(_frames(a, [out], pr.info()), _progress)
 
 
+def standard_geometry(inks: str) -> dict:
+    """Parameter values for the standard FreeJet frame with this many cartridges (must match
+    cad/fj.scad: 28 mm cartridge pitch, frame 2 x span wider, paper guide span further right)."""
+    from .color import INKSETS
+    n = len(INKSETS[inks])
+    span = (n - 1) * 28
+    p = {"n_heads": n, "col0_x_um": (40 + span) * 1000, "spit_x_um": (32 + span) * 1000,
+         "x_travel_um": (300 + span) * 1000}
+    for i in range(1, 4):
+        p[f"head{i}_x_um"] = 28000 * i
+        p[f"head{i}_dy_rows"] = 0
+    return p
+
+
+def cmd_setup(a):
+    vals = standard_geometry(a.inks)
+    with _open(a) as pr:
+        for name, v in vals.items():
+            pr.set_param(BY_NAME[name].id, v)
+        pr.simple(P.PARAM_SAVE)
+    print(f"configured for ink set {a.inks}: " + ", ".join(f"{k}={v}" for k, v in vals.items()))
+    print("now run: freejet test nozzles --inks " + a.inks +
+          ("" if a.inks == "K" else f"  and  freejet test heads --inks {a.inks}"))
+
+
 def cmd_calibrate(a):
     um = P.UM_PER_COL
     if a.what in ("head-x", "head-y"):
@@ -292,6 +317,10 @@ def build_parser():
     page_opts(p)
     p.add_argument("--dry-run", metavar="OUT.png")
     p.set_defaults(func=cmd_test)
+
+    p = sub.add_parser("setup", help="set cartridge count + frame geometry for a standard build")
+    p.add_argument("--inks", required=True, choices=["K", "KLK", "CMY", "CMYK"])
+    p.set_defaults(func=cmd_setup)
 
     p = sub.add_parser("calibrate", help="apply a calibration result and save it")
     p.add_argument("what", choices=["rows", "bidir", "feed", "head-x", "head-y"])

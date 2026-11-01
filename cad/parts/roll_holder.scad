@@ -1,11 +1,15 @@
 // Optional roll-paper holder (replaces the rear tray). PART = "arm" (print 2, mirror one in the
-// slicer), "core" (print 2: cones that centre a 25-76 mm paper core) and "spindle" (print 2,
-// upright, 100 % infill: the two halves plug together and are pinned with an M3x16 + nut).
+// slicer), "core" (print 2: cones that centre a 25-76 mm paper core) and "spindle" (print
+// spindle_pieces of it - 3 for the 1-cartridge printer - upright, 100 % infill: they plug
+// together and are pinned with M3x16 + nuts).
 // The spindle rests in the arm hooks; the roll unwinds from underneath into the input rollers.
 // Rolls up to 220 mm wide and 90 mm diameter. Thread the paper, then print with --paper roll.
 include <../fj.scad>
 PART = "arm";
-sp_d = 12; sp_half = 130;
+sp_d = 12;
+spindle_len = inner_w + 2 * plate_t + 2 * 8 + 10;     // spans both arms
+spindle_pieces = ceil(spindle_len / 150);
+sp_half = spindle_len / spindle_pieces;               // length of one piece
 roll_y = plate_y0 - 60; roll_z = 30;
 module arm() {
     difference() {
@@ -30,7 +34,8 @@ module core() {
         translate([0,0,30]) rotate([0,90,0]) cylinder(d=2.7, h=30);
     }
 }
-module spindle_half() difference() {       // half of a 12 mm spindle; joins at the spigot
+echo(str("roll spindle: print ", spindle_pieces, " pieces of ", sp_half, " mm"));
+module spindle_half() difference() {       // one piece of the 12 mm spindle; joins at the spigot
     union() { cylinder(d=sp_d, h=sp_half); translate([0,0,sp_half]) cylinder(d=6, h=8); }
     translate([0,0,-1]) cylinder(d=6.3, h=9);         // socket for the other half's spigot
     for (z=[4, sp_half + 4]) translate([0,0,z]) rotate([90,0,0]) cylinder(d=m3, h=20, center=true);  // cross pin

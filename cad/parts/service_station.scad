@@ -28,7 +28,7 @@ module base() {
             translate([0, -24, -34]) cube([4, 48, 30]);                     // flange on the plate
             translate([0, -15, -30]) cube([spit_x + 9, 30, base_top + 30]); // body
             translate([wiper_x - 4, -11, base_top]) cube([8, 22, 4]);       // wiper clamp
-            translate([cap_x + 20, -3, base_top]) cube([4, 6, 6]);          // band hook post
+            translate([cap_x + head_span + 20, -3, base_top]) cube([4, 6, 6]);  // spring hook post
         }
         for (y=[-18, 18]) translate([2, y, -24]) rotate([0,90,0]) cylinder(d=m3, h=10, center=true);
         // inclined sled channel (open on top)
@@ -39,31 +39,35 @@ module base() {
         // wiper slot + clamp screw
         translate([wiper_x, 0, base_top + 2]) cube([1.6, 23, 12], center=true);
         translate([wiper_x + 3, 0, base_top + 2]) rotate([0,90,0]) cylinder(d=2.7, h=12, center=true);
-        // spittoon cup (baffles added back below)
+        // spittoon cup (the firmware brings each cartridge over it in turn; baffles added below)
         translate([spit_x, 0, base_top - 16]) cylinder(d=13, h=24);
+        // room for the extra caps on the sled to travel
+        if (N_HEADS > 1) translate([cap_x + 8 - sled_engage - 2, -9.5, pad_top_retracted - 9])
+            cube([head_span + sled_engage + 4, 19, 20]);
         // wiring channel
         translate([4, -2, -31]) cube([10, 4, 10]);
     }
 }
 
 module sled() {   // drawn in its retracted position
-    post_u = -(cap_x - (park_x + sled_engage - carr_w/2)) / cos(ramp_a);   // incline coord of the post face
+    // the carriage's left face is 27 mm left of slot 0's nozzles
+    post_u = -(cap_x - (park_x + sled_engage - 27)) / cos(ramp_a);   // incline coord of the post face
     post_z = pad_top_retracted - 6 - post_u * sin(ramp_a);
     difference() {
         union() {
             channel_frame() translate([-12, -8.75, -3]) cube([24, 17.5, 6]);              // body
-            translate([cap_x - 8, -9, pad_top_retracted - 4.5]) cube([16, 18, 4.5]);    // pad holder
+            translate([cap_x - 8, -9, pad_top_retracted - 4.5]) cube([16 + head_span, 18, 4.5]);  // cap holder
             channel_frame() translate([post_u - 4, -4, -3]) cube([-post_u - 4 + 0.01, 8, 6]); // arm
             translate([cap_x + post_u * cos(ramp_a) - 3.6, -4, post_z - 3]) cube([3.6, 8, 12 - post_z + 3]); // post
         }
         translate([cap_x - 6.5, -7.5, pad_top_retracted - 3]) cube([13, 15, 4]);         // pad recess
-        translate([cap_x + 10, 0, pad_top_retracted - 2.5]) rotate([90,0,0]) cylinder(d=2.5, h=30, center=true); // band hook
+        translate([cap_x + head_span + 10, 0, pad_top_retracted - 2.5]) rotate([90,0,0]) cylinder(d=2.5, h=30, center=true); // spring hook
     }
 }
 
-module spit_baffles() intersection() {
-    translate([spit_x, 0, base_top - 16]) cylinder(d=13, h=12);
-    for (a=[0, 60, 120]) translate([spit_x, 0, base_top - 10]) rotate(a) cube([14, 1, 12], center=true);
+module spit_baffles() let(x = spit_x) intersection() {
+    translate([x, 0, base_top - 16]) cylinder(d=13, h=12);
+    for (a=[0, 60, 120]) translate([x, 0, base_top - 10]) rotate(a) cube([14, 1, 12], center=true);
 }
 
 // TPU 85A-95A, 100 % infill: a shallow cup whose 1 mm lip seals around the nozzle plate.

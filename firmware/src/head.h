@@ -13,9 +13,9 @@ int head_count(void);                 // cartridges fitted (param n_heads)
 
 // Start printing a pass. Core1 composes column j and fires it when g_col_target > j.
 void head_start_pass(fj_pass_t *p);
-// Fire `count` columns of nozzle (head * 300 + n), or every nozzle of every cartridge (-1),
+// Fire `count` columns of one nozzle (or every nozzle: -1) of one cartridge (or all: -1),
 // every period_us, in place.
-void head_start_spit(int nozzle, uint32_t count, uint32_t period_us);
+void head_start_spit(int head, int nozzle, uint32_t count, uint32_t period_us);
 bool head_busy(void);
 int head_result(void);                // FJ_OK or FJ_E_* of the last job
 void head_abort(void);

@@ -30,7 +30,7 @@ PARAMS = [
     Param(7, "y_accel_mm_s2", 400, 50, 5000, "paper feed acceleration"),
     Param(8, "x_dir_invert", 0, 0, 1, "flip carriage motor direction"),
     Param(9, "y_dir_invert", 0, 0, 1, "flip feed motor direction"),
-    Param(10, "x_travel_um", 300000, 50000, 600000, "usable carriage travel from home"),
+    Param(10, "x_travel_um", 300000, 50000, 800000, "usable carriage travel from home"),
     Param(11, "home_speed_mm_s", 25, 2, 100, "homing speed"),
     Param(12, "home_backoff_um", 3000, 0, 20000, "distance to back off the switch after homing"),
     # --- geometry (calibrated) ---------------------------------------------
@@ -44,7 +44,7 @@ PARAMS = [
     Param(24, "sensor_to_nozzle_um", 60000, 0, 300000,
           "feed distance from the paper sensor switching to the leading edge reaching the exit-most nozzle"),
     Param(25, "eject_um", 120000, 0, 500000, "extra feed after the trailing edge passes the sensor"),
-    Param(26, "spit_x_um", 20000, 0, 200000, "carriage X over the spittoon"),
+    Param(26, "spit_x_um", 32000, 0, 300000, "slot-0 nozzles X over the spittoon"),
     Param(27, "max_cols", 5184, 100, 7000, "widest printable line in 1/600 in columns"),
     Param(28, "cutter_um", 78000, 0, 200000, "roll mode: distance from the exit-most nozzle to the tear-off edge"),
     # --- printhead -----------------------------------------------------------

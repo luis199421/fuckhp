@@ -1,6 +1,9 @@
 # Printhead board (rides on the carriage)
 
-A small 2-layer PCB, about 44 × 46 mm. One face carries the 52 round gold
+A narrow 2-layer PCB, **26 × 92 mm**, one per cartridge (narrow so that up to
+four sit side by side at the 28 mm cartridge pitch for grayscale/colour builds;
+the top part sticks out above the carriage and carries the ribbon connector).
+One face carries the 52 round gold
 contact pads that the HP45's flex circuit presses against (footprint:
 [`HP45_Contacts.kicad_mod`](HP45_Contacts.kicad_mod), coordinates in
 [`hp45_pads.csv`](hp45_pads.csv)). The other face carries the driver chips,
@@ -64,7 +67,7 @@ power come up the 16-way ribbon cable from the main board.
 | 3 | GND | 4 | GND |
 | 5 | +5 V logic | 6 | GND |
 | 7 | P_SRCLK | 8 | GND |
-| 9 | P_SER | 10 | P_RCLK |
+| 9 | P_SER (this slot's own line) | 10 | P_RCLK |
 | 11 | FIRE | 12 | A_SRCLK |
 | 13 | A_SER | 14 | A_RCLK |
 | 15 | H_CLR_N | 16 | TSR |

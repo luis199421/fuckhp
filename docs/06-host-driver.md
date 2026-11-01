@@ -23,6 +23,7 @@ freejet print photo.jpg --paper a4 --dither fs
 freejet print notes.txt --pages 1-2 --copies 3
 freejet print label.png --paper roll --length 100
 freejet preview report.pdf -o preview.png   # exactly what would be printed
+freejet print photo.jpg --inks CMYK         # colour / grayscale builds: see 12-grayscale-and-color.md
 ```
 
 When a page starts the printer waits for paper: slide a sheet face up into
@@ -49,12 +50,13 @@ lp -d FreeJet -o media=A4 -o FJDither=FS photo.jpg
 lp -d FreeJet -o FJMediaSource=Roll -o media=Roll6 label.pdf
 ```
 
-Options in the print dialog: paper size, paper source (sheet/roll),
-pause-for-cutting (roll), bidirectional on/off, halftoning (auto, error
-diffusion, ordered, black & white).
+Options in the print dialog: paper size, colour mode (grayscale/colour),
+cartridges fitted (black / black + light black / CMY / CMYK), tone
+(darker…lighter), paper source (sheet/roll), pause-for-cutting (roll),
+bidirectional on/off, halftoning (auto, error diffusion, ordered, black & white).
 
-How it works: CUPS turns the document into 600 dpi 8-bit grey raster (using
-Ghostscript); `rastertofreejet` halftones it, cuts it into passes and
+How it works: CUPS turns the document into 600 dpi 8-bit grey or RGB raster
+(using Ghostscript); `rastertofreejet` separates it into the fitted inks, halftones it, cuts it into passes and
 compresses them; the `freejet` backend streams that to the printer and
 reports "out of paper", errors and progress back to CUPS.
 
